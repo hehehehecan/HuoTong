@@ -1,6 +1,6 @@
 # Story 1.2: 用户登录与认证
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -155,3 +155,29 @@ so that 只有家人才能访问和操作业务数据。
 ### Change Log
 
 - 2026-03-09: 实现 Story 1.2 用户登录与认证：登录页、Supabase Auth、Pinia 会话持久化、路由守卫、退出登录；状态更新为 review。
+- 2026-03-09: 完成代码审查并修复高/中优先问题：首屏认证恢复竞态与登录错误提示分级；状态更新为 done。
+
+## Senior Developer Review (AI)
+
+### Review Date
+
+- 2026-03-09
+
+### Findings Summary
+
+- High: 1（已修复 1，剩余 0）
+- Medium: 2（已修复 2，剩余 0）
+- Low: 0
+
+### Findings and Resolutions
+
+1. [High] 首屏路由守卫与会话恢复存在竞态，刷新后可能误判未登录并重定向到 `/login`。  
+   - 修复：在 `main.ts` 中先 `await userStore.initSession()` 再 `app.use(router)` 并 `await router.isReady()` 后挂载；同时在守卫中补充 `await userStore.initSession()` 兜底。
+2. [Medium] 登录错误提示将所有异常都归类为“邮箱或密码错误”，会掩盖网络或服务异常。  
+   - 修复：在 `LoginView.vue` 中仅对 `invalid login credentials` 显示“邮箱或密码错误”，其他异常提示“登录失败，请稍后重试”。
+3. [Medium] 路由守卫在初始化边界条件下缺少会话重试校验，导致 AC #1“刷新后保持登录”稳定性不足。  
+   - 修复：`router.beforeEach` 改为异步并在未登录状态先恢复一次会话，再做跳转判断。
+
+### Verification
+
+- `npm run build`：通过（包含 `vue-tsc -b` 与 `vite build`）。

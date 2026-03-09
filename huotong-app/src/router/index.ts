@@ -18,22 +18,22 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to) => {
   const userStore = useUserStore()
   const isPublic = to.meta.public === true
 
+  if (!userStore.isLoggedIn) {
+    await userStore.initSession()
+  }
+
   if (isPublic) {
     if (userStore.isLoggedIn) {
-      next({ path: '/' })
-    } else {
-      next()
+      return { path: '/' }
     }
-  } else {
-    if (!userStore.isLoggedIn) {
-      next({ path: '/login', query: { redirect: to.fullPath } })
-    } else {
-      next()
-    }
+    return
+  }
+  if (!userStore.isLoggedIn) {
+    return { path: '/login', query: { redirect: to.fullPath } }
   }
 })
 

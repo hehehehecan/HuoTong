@@ -22,7 +22,14 @@ async function onSubmit() {
     await userStore.login(email.value.trim(), password.value)
     router.replace('/')
   } catch (err: unknown) {
-    showToast('邮箱或密码错误')
+    const message =
+      typeof err === 'object' &&
+      err !== null &&
+      'message' in err &&
+      String((err as { message: unknown }).message).toLowerCase().includes('invalid login credentials')
+        ? '邮箱或密码错误'
+        : '登录失败，请稍后重试'
+    showToast(message)
   } finally {
     loading.value = false
   }
@@ -33,7 +40,7 @@ async function onSubmit() {
   <div class="login-page">
     <h1 class="title">货通 · 登录</h1>
     <p class="hint">请输入账号与密码登录系统</p>
-    <Form @submit="onSubmit">
+    <Form @submit="onSubmit" @keydown.enter.prevent="onSubmit">
       <Field
         v-model="email"
         name="email"
@@ -57,6 +64,7 @@ async function onSubmit() {
           type="primary"
           native-type="submit"
           :loading="loading"
+          data-testid="login-submit"
         >
           登录
         </VanButton>

@@ -10,17 +10,18 @@ import './style.css'
 const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
-app.use(router)
 app.use(VanButton)
 app.use(Field)
 app.use(Form)
 app.use(Toast)
-app.component('VanButton', VanButton)
 
 async function bootstrap() {
   const userStore = useUserStore()
   await userStore.initSession()
   userStore.subscribeAuth()
+  // Ensure initial auth state is restored before first route resolution.
+  app.use(router)
+  await router.isReady()
   app.mount('#app')
 }
 
