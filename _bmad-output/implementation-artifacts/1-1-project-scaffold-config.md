@@ -1,6 +1,6 @@
 # Story 1.1: 项目脚手架与基础配置
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -172,7 +172,25 @@ so that 后续所有功能开发有统一的技术基础。
   - Task 1: Partial（Vant 渲染验证证据不足）
   - Task 2: Partial（Supabase 连接验证逻辑不严谨）
 
+#### 2026-03-09（CR Round 2）
+
+- Reviewer: Hezhangcan
+- Date: 2026-03-09
+- Outcome: Approved
+- Git vs Story Discrepancies: 2（`huotong-app/src/views/LoginView.vue` 与 `_bmad-output/project-context.md` 属于后续开发上下文，不纳入本 Story 提交范围）
+- Issues Summary: 0 High, 0 Medium, 1 Low
+- AC Validation:
+  - AC1: Implemented（依赖版本、Vant 渲染与构建验证均满足）
+  - AC2: Implemented（`src/lib/supabase.ts` 单例导出且连接探测逻辑正确处理 error）
+- Task Audit:
+  - Task 1: Done
+  - Task 2: Done
+- Notes:
+  - 本轮 CR 以“自动修复高/中问题”为策略复核，当前无 High/Medium 剩余问题。
+  - 低优先级项仅为工作区存在后续 Story 变更，已在此记录透明化，不阻塞 Story 1.1 完成。
+
 ### Change Log
 
 - 2026-03-09: 执行 AI Code Review，新增 Review Follow-ups（6 项），状态由 `review` 更新为 `in-progress`。
 - 2026-03-09: 根据 review follow-ups 完成修复并回归验证通过，状态由 `in-progress` 更新为 `review`。
+- 2026-03-09: 执行 CR Round 2，确认 High/Medium 问题清零，状态由 `review` 更新为 `done`，并同步 sprint 状态。
