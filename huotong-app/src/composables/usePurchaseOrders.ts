@@ -22,6 +22,10 @@ export interface PurchaseOrderItem {
   subtotal: number
 }
 
+export interface PurchaseOrderItemWithProduct extends PurchaseOrderItem {
+  products?: { name: string; spec: string } | null
+}
+
 export interface PurchaseOrderItemInput {
   product_id: string
   quantity: number
@@ -47,6 +51,18 @@ function isNetworkError(err: PostgrestError | Error): boolean {
     msg.includes('failed to fetch') ||
     msg.includes('networkerror')
   )
+}
+
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
+function isNonDraftError(err: unknown): boolean {
+  const msg = getErrorMessage(err).toLowerCase()
+  if (msg.includes('order_already_confirmed')) return true
+  if (msg.includes('不是') && msg.includes('draft')) return true
+  if (msg.includes('not') && msg.includes('draft')) return true
+  return false
 }
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 1): Promise<T> {
@@ -141,5 +157,50 @@ export function usePurchaseOrders() {
     return data as PurchaseOrder
   }
 
-  return { loading, createDraft, getById }
+  async function getItemsWithProduct(orderId: string): Promise<PurchaseOrderItemWithProduct[]> {
+    const { data, error } = await supabase
+      .from('purchase_order_items')
+      .select('*, products(name, spec)')
+      .eq('order_id', orderId)
+      .order('id')
+    if (error) throw error
+    return (data ?? []) as PurchaseOrderItemWithProduct[]
+  }
+
+  async function confirm(orderId: string): Promise<void> {
+    loading.value = true
+    try {
+      try {
+        await withRetry(async () => {
+          const { error } = await supabase.rpc('confirm_purchase_order', {
+            order_id: orderId,
+          })
+          if (error) throw error
+        })
+      } catch (e) {
+        // 网络重试后可能命中“非 draft”错误，回查状态避免误报失败。
+        if (isNonDraftError(e)) {
+          const latest = await getById(orderId)
+          if (latest?.status === 'confirmed') return
+        }
+        throw e
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  function parseConfirmError(err: unknown): string | null {
+    if (isNonDraftError(err)) return '该进货单已不是草稿，请刷新后重试'
+    return null
+  }
+
+  return {
+    loading,
+    createDraft,
+    getById,
+    getItemsWithProduct,
+    confirm,
+    parseConfirmError,
+  }
 }

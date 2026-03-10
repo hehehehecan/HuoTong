@@ -123,3 +123,15 @@
 6. 未选择供应商或未添加任何商品时点击「保存」，按钮应禁用或 Toast 提示「请选择供应商」/「请至少添加一件商品」。
 7. 选择供应商并添加至少一件商品后点击「保存」，应 Toast「已保存」并跳转到该进货单详情页（`/purchase-orders/:id`）；详情页显示单号、供应商名、总金额、状态（草稿）；Supabase 中 `purchase_orders`、`purchase_order_items` 应有对应草稿记录，`total_amount` 正确。
 
+---
+
+## 5-2-purchase-order-confirm（循环完成日：2026-03-10）
+
+**已验证**：否
+
+1. 登录后先创建一张草稿进货单（`/purchase-orders/new` 选供应商并添加商品后保存），应跳转到 `/purchase-orders/:id` 详情页，状态为「草稿」。
+2. 在草稿详情页点击「确认进货」应弹出二次确认框，展示供应商、商品数、总金额；点击取消应不改状态。
+3. 在确认框点击确认后，应 Toast「进货单已确认」，详情页刷新并显示状态「已确认」；按钮不再显示。
+4. 在 Supabase 中核对：`purchase_orders.status` 变为 `confirmed`；`stock_logs` 新增 `reason='purchase_order'` 的明细记录；`payables` 新增一条 `purchase_order_id` 对应记录，`amount=订单 total_amount` 且 `status='unpaid'`。
+5. （可选异常验证）网络断开或模拟数据库错误后点击确认，应提示「操作失败，请重试」，且订单状态、库存、应付记录不应出现部分成功（事务回滚）。
+
