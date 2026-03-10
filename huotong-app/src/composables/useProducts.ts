@@ -42,11 +42,21 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 1): Promise<T> {
   }
 }
 
+/** Escape % and _ for use in Supabase ilike pattern (literal match). */
+function escapeIlike(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/%/g, '\\%')
+    .replace(/_/g, '\\_')
+}
+
 export function useProducts() {
   const products = ref<Product[]>([])
   const loading = ref(false)
+  let latestQueryId = 0
 
   async function fetchAll() {
+    const queryId = ++latestQueryId
     loading.value = true
     try {
       const { data, error } = await supabase
@@ -54,8 +64,11 @@ export function useProducts() {
         .select('*')
         .order('name', { ascending: true })
       if (error) throw error
-      products.value = (data ?? []) as Product[]
-      return products.value
+      const nextProducts = (data ?? []) as Product[]
+      if (queryId === latestQueryId) {
+        products.value = nextProducts
+      }
+      return nextProducts
     } finally {
       loading.value = false
     }
@@ -77,5 +90,71 @@ export function useProducts() {
     return result
   }
 
-  return { products, loading, fetchAll, create }
+  async function search(keyword: string): Promise<Product[]> {
+    const k = keyword.trim()
+    if (!k) return fetchAll()
+    const queryId = ++latestQueryId
+    loading.value = true
+    try {
+      const pattern = `%${escapeIlike(k)}%`
+      const quoted = `"${pattern.replace(/"/g, '""')}"`
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .or(`name.ilike.${quoted},spec.ilike.${quoted}`)
+        .order('name', { ascending: true })
+      if (error) throw error
+      const nextProducts = (data ?? []) as Product[]
+      if (queryId === latestQueryId) {
+        products.value = nextProducts
+      }
+      return nextProducts
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function getById(id: string): Promise<Product | null> {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error) {
+      if (error.code === 'PGRST116') return null
+      throw error
+    }
+    return data as Product
+  }
+
+  async function update(
+    id: string,
+    input: Partial<ProductInput>
+  ): Promise<Product | null> {
+    const payload: Record<string, unknown> = {}
+    if (input.name !== undefined) payload.name = input.name.trim()
+    if (input.spec !== undefined) payload.spec = input.spec?.trim() ?? ''
+    if (input.sell_price !== undefined) payload.sell_price = input.sell_price
+    if (input.buy_price !== undefined) payload.buy_price = input.buy_price
+    const result = await withRetry(async () => {
+      const r = await supabase
+        .from('products')
+        .update(payload)
+        .eq('id', id)
+        .select()
+        .single()
+      if (r.error) throw r.error
+      return r.data as Product
+    })
+    return result
+  }
+
+  async function remove(id: string): Promise<void> {
+    await withRetry(async () => {
+      const { error } = await supabase.from('products').delete().eq('id', id)
+      if (error) throw error
+    })
+  }
+
+  return { products, loading, fetchAll, search, create, getById, update, remove }
 }

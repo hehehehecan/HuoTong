@@ -49,8 +49,8 @@ development_status:
 
   epic-2: in-progress
   2-1-product-data-entry: done
-  2-2-product-list-search: backlog
-  2-3-product-edit-delete: backlog
+  2-2-product-list-search: done
+  2-3-product-edit-delete: done
   2-4-batch-import-products: backlog
   epic-2-retrospective: optional
 

@@ -1,17 +1,38 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button as VanButton, showToast } from 'vant'
 import { useProducts } from '../composables/useProducts'
 
 const router = useRouter()
-const { products, loading, fetchAll } = useProducts()
+const { products, loading, fetchAll, search } = useProducts()
 const refreshing = ref(false)
+const searchKeyword = ref('')
+
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+function runSearch(options?: { silent?: boolean }): Promise<void> {
+  const silent = options?.silent ?? false
+  const k = searchKeyword.value.trim()
+  const task = k ? search(k) : fetchAll()
+  return task.then(() => undefined).catch((error) => {
+    if (!silent) {
+      showToast({ type: 'fail', message: k ? '搜索失败，请重试' : '加载商品失败，请下拉重试' })
+    }
+    throw error
+  })
+}
+
+function onSearchInput() {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    void runSearch()
+  }, 300)
+}
 
 async function onRefresh() {
   refreshing.value = true
   try {
-    await fetchAll()
+    await runSearch({ silent: true })
   } catch {
     showToast({ type: 'fail', message: '刷新失败，请重试' })
   } finally {
@@ -23,19 +44,37 @@ function goToNew() {
   router.push('/products/new')
 }
 
+function goToEdit(id: string) {
+  router.push(`/products/${id}`)
+}
+
 function formatPrice(n: number) {
   return Number(n).toFixed(2)
 }
 
+const isSearchEmpty =
+  computed(() => searchKeyword.value.trim() !== '' && products.value.length === 0)
+
 onMounted(() => {
-  fetchAll().catch(() => {
-    showToast({ type: 'fail', message: '加载商品失败，请下拉重试' })
-  })
+  void runSearch()
+})
+
+onUnmounted(() => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer)
+    debounceTimer = null
+  }
 })
 </script>
 
 <template>
   <div class="product-list">
+    <van-search
+      v-model="searchKeyword"
+      placeholder="搜索商品名称或规格"
+      shape="round"
+      @update:model-value="onSearchInput"
+    />
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-list :loading="loading" :finished="true" finished-text="">
         <template v-if="products.length">
@@ -46,8 +85,13 @@ onMounted(() => {
             :label="p.spec || '—'"
             :value="`¥${formatPrice(p.sell_price)}`"
             class="product-cell"
+            clickable
+            @click="goToEdit(p.id)"
           />
         </template>
+        <div v-else-if="isSearchEmpty" class="empty">
+          <p>没有找到相关商品</p>
+        </div>
         <div v-else class="empty">
           <p>暂无商品，点击右上角新增</p>
         </div>

@@ -12,6 +12,8 @@ import {
   Cell,
   CellGroup,
   PullRefresh,
+  Search,
+  Dialog,
 } from 'vant'
 import 'vant/lib/index.css'
 import router from './router'
@@ -33,6 +35,8 @@ app.use(List)
 app.use(Cell)
 app.use(CellGroup)
 app.use(PullRefresh)
+app.use(Search)
+app.use(Dialog)
 
 async function bootstrap() {
   const userStore = useUserStore()

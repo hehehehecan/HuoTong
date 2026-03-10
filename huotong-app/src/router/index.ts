@@ -33,6 +33,12 @@ const router = createRouter({
           meta: { title: '新增商品' },
         },
         {
+          path: 'products/:id',
+          name: 'product-edit',
+          component: () => import('../views/ProductFormView.vue'),
+          meta: { title: '编辑商品' },
+        },
+        {
           path: 'orders',
           name: 'orders',
           component: () => import('../views/PlaceholderView.vue'),

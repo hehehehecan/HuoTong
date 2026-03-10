@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { Form as VanForm, Field as VanField, Button as VanButton, showToast } from 'vant'
+import { ref, reactive, watch, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { Form as VanForm, Field as VanField, Button as VanButton, showToast, showConfirmDialog } from 'vant'
 import { useProducts } from '../composables/useProducts'
 
 const router = useRouter()
-const { create } = useProducts()
+const route = useRoute()
+const { create, getById, update, remove } = useProducts()
 
+const productId = computed(() => route.params.id as string | undefined)
+const isEditMode = computed(() => !!productId.value)
+
+const loading = ref(false)
 const submitting = ref(false)
 const form = reactive({
   name: '',
@@ -14,6 +19,51 @@ const form = reactive({
   sell_price: '',
   buy_price: '',
 })
+
+function resetForm() {
+  form.name = ''
+  form.spec = ''
+  form.sell_price = ''
+  form.buy_price = ''
+}
+
+let latestLoadId = 0
+async function loadProductByRouteId() {
+  const id = productId.value
+  if (!id) {
+    latestLoadId += 1
+    resetForm()
+    loading.value = false
+    return
+  }
+  const loadId = ++latestLoadId
+  loading.value = true
+  try {
+    const product = await getById(id)
+    if (loadId !== latestLoadId) return
+    if (!product) {
+      showToast('商品不存在')
+      router.push('/products')
+      return
+    }
+    form.name = product.name
+    form.spec = product.spec ?? ''
+    form.sell_price = String(product.sell_price ?? 0)
+    form.buy_price = String(product.buy_price ?? 0)
+  } catch {
+    if (loadId !== latestLoadId) return
+    showToast({ type: 'fail', message: '加载失败，请检查网络后重试' })
+    router.push('/products')
+  } finally {
+    if (loadId === latestLoadId) {
+      loading.value = false
+    }
+  }
+}
+
+watch(productId, () => {
+  void loadProductByRouteId()
+}, { immediate: true })
 
 async function onSubmit() {
   const name = form.name.trim()
@@ -23,18 +73,49 @@ async function onSubmit() {
   }
   submitting.value = true
   try {
-    await create({
-      name,
-      spec: form.spec.trim() || undefined,
-      sell_price: parseFloat(form.sell_price) || 0,
-      buy_price: parseFloat(form.buy_price) || 0,
-    })
-    showToast({ type: 'success', message: '保存成功' })
+    const id = productId.value
+    if (id) {
+      await update(id, {
+        name,
+        spec: form.spec.trim() || undefined,
+        sell_price: parseFloat(form.sell_price) || 0,
+        buy_price: parseFloat(form.buy_price) || 0,
+      })
+      showToast({ type: 'success', message: '保存成功' })
+    } else {
+      await create({
+        name,
+        spec: form.spec.trim() || undefined,
+        sell_price: parseFloat(form.sell_price) || 0,
+        buy_price: parseFloat(form.buy_price) || 0,
+      })
+      showToast({ type: 'success', message: '保存成功' })
+    }
     router.push('/products')
   } catch {
     showToast({ type: 'fail', message: '保存失败，请检查网络后重试' })
   } finally {
     submitting.value = false
+  }
+}
+
+async function onDelete() {
+  const id = productId.value
+  if (!id || submitting.value || loading.value) return
+  try {
+    await showConfirmDialog({
+      title: '删除商品',
+      message: '确定要删除该商品吗？',
+    })
+  } catch {
+    return
+  }
+  try {
+    await remove(id)
+    showToast({ type: 'success', message: '已删除' })
+    router.push('/products')
+  } catch {
+    showToast({ type: 'fail', message: '删除失败，请检查网络后重试' })
   }
 }
 </script>
@@ -80,9 +161,22 @@ async function onSubmit() {
           type="primary"
           native-type="submit"
           :loading="submitting"
+          :disabled="loading"
           class="submit-btn"
         >
           保存
+        </van-button>
+        <van-button
+          v-if="isEditMode"
+          round
+          block
+          type="danger"
+          plain
+          :disabled="loading || submitting"
+          class="delete-btn"
+          @click="onDelete"
+        >
+          删除商品
         </van-button>
       </div>
     </van-form>
@@ -99,6 +193,11 @@ async function onSubmit() {
   padding: 0 16px;
 }
 .submit-btn {
+  min-height: 48px;
+  font-size: 16px;
+}
+.delete-btn {
+  margin-top: 0.75rem;
   min-height: 48px;
   font-size: 16px;
 }
