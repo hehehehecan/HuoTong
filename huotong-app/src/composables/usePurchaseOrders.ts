@@ -48,6 +48,13 @@ export interface PurchaseOrderDraftInput {
   items: PurchaseOrderItemInput[]
 }
 
+/** 识图结果：与 Edge Function recognize-receipt 返回格式一致（本 Story 使用 supplier_name、items、total） */
+export interface RecognizeReceiptResult {
+  supplier_name: string | null
+  items: { name: string; quantity: number; unit_price: number }[]
+  total: number | null
+}
+
 function toMoney(value: number): number {
   const normalized = Number(value)
   if (!Number.isFinite(normalized)) return 0
@@ -235,6 +242,35 @@ export function usePurchaseOrders() {
     return null
   }
 
+  /** 拍照识别：调用 recognize-receipt Edge Function，返回 supplier_name、items、total */
+  async function recognizeFromImage(imageBase64: string): Promise<RecognizeReceiptResult | null> {
+    try {
+      const { data, error } = await withRetry(() =>
+        supabase.functions.invoke('recognize-receipt', {
+          body: { image_base64: imageBase64 },
+        })
+      )
+      if (error) throw error
+      const raw = data as string | { supplier_name?: string | null; items?: unknown; total?: number | null } | undefined
+      if (raw === undefined || raw === null) return null
+      const parsed = typeof raw === 'string' ? (JSON.parse(raw) as RecognizeReceiptResult) : raw
+      const items = Array.isArray(parsed.items)
+        ? parsed.items.map((i: { name?: string; quantity?: number; unit_price?: number }) => ({
+            name: typeof i?.name === 'string' ? i.name : '',
+            quantity: Number(i?.quantity) || 0,
+            unit_price: Number(i?.unit_price) || 0,
+          }))
+        : []
+      return {
+        supplier_name: parsed.supplier_name ?? null,
+        items,
+        total: typeof parsed.total === 'number' ? parsed.total : null,
+      }
+    } catch {
+      return null
+    }
+  }
+
   return {
     loading,
     createDraft,
@@ -243,5 +279,6 @@ export function usePurchaseOrders() {
     getItemsWithProduct,
     confirm,
     parseConfirmError,
+    recognizeFromImage,
   }
 }
