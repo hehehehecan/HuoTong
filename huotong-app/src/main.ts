@@ -20,6 +20,7 @@ import {
   Collapse,
   CollapseItem,
   Empty,
+  Tag,
 } from 'vant'
 import 'vant/lib/index.css'
 import router from './router'
@@ -49,6 +50,7 @@ app.use(Overlay)
 app.use(Collapse)
 app.use(CollapseItem)
 app.use(Empty)
+app.use(Tag)
 
 async function bootstrap() {
   const userStore = useUserStore()

@@ -1,16 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
 const title = computed(() => (route.meta.title as string) ?? '')
 const message = computed(() => (route.meta.message as string) ?? '功能开发中，敬请期待')
+const isMorePage = computed(() => route.path === '/more')
+
+function goToStock() {
+  router.push('/stock')
+}
 </script>
 
 <template>
   <div class="placeholder">
     <p class="placeholder-title">{{ title }}</p>
     <p class="placeholder-message">{{ message }}</p>
+    <div v-if="isMorePage" class="shortcuts">
+      <van-cell title="库存总览" is-link @click="goToStock" />
+    </div>
   </div>
 </template>
 
@@ -32,5 +41,11 @@ const message = computed(() => (route.meta.message as string) ?? '功能开发�
 }
 .placeholder-message {
   color: var(--van-gray-6, #969799);
+}
+
+.shortcuts {
+  margin-top: 1.5rem;
+  width: 100%;
+  max-width: 400px;
 }
 </style>

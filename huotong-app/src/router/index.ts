@@ -139,6 +139,12 @@ const router = createRouter({
           component: () => import('../views/PayablesView.vue'),
           meta: { title: '应付账款' },
         },
+        {
+          path: 'stock',
+          name: 'stock',
+          component: () => import('../views/InventoryView.vue'),
+          meta: { title: '库存总览' },
+        },
       ],
     },
   ],
