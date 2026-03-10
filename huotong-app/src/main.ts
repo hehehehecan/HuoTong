@@ -1,6 +1,18 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { Button as VanButton, Field, Form, Toast, NavBar, Tabbar, TabbarItem } from 'vant'
+import {
+  Button as VanButton,
+  Field,
+  Form,
+  Toast,
+  NavBar,
+  Tabbar,
+  TabbarItem,
+  List,
+  Cell,
+  CellGroup,
+  PullRefresh,
+} from 'vant'
 import 'vant/lib/index.css'
 import router from './router'
 import App from './App.vue'
@@ -17,6 +29,10 @@ app.use(Toast)
 app.use(NavBar)
 app.use(Tabbar)
 app.use(TabbarItem)
+app.use(List)
+app.use(Cell)
+app.use(CellGroup)
+app.use(PullRefresh)
 
 async function bootstrap() {
   const userStore = useUserStore()

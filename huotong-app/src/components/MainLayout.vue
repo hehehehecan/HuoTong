@@ -5,6 +5,8 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 const navTitle = computed(() => {
+  const metaTitle = route.meta.title as string | undefined
+  if (metaTitle) return metaTitle
   const titleMap: Record<string, string> = {
     home: '首页',
     products: '商品',

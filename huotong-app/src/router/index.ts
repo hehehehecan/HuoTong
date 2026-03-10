@@ -23,8 +23,14 @@ const router = createRouter({
         {
           path: 'products',
           name: 'products',
-          component: () => import('../views/PlaceholderView.vue'),
-          meta: { title: '商品', message: '功能开发中，敬请期待' },
+          component: () => import('../views/ProductListView.vue'),
+          meta: { title: '商品' },
+        },
+        {
+          path: 'products/new',
+          name: 'product-new',
+          component: () => import('../views/ProductFormView.vue'),
+          meta: { title: '新增商品' },
         },
         {
           path: 'orders',
