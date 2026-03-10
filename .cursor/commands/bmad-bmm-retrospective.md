@@ -1,6 +1,6 @@
 ---
 name: 'retrospective'
-description: 'Post-epic review to extract lessons and assess success. Use when the user says "run a retrospective" or "lets retro the epic [epic]"'
+description: '史诗结束后进行回顾，提取经验教训并评估成功。当用户说「运行回顾」或「为 [epic] 做回顾」时使用'
 ---
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:

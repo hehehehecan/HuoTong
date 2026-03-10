@@ -1,6 +1,6 @@
 ---
 name: 'editorial-review-structure'
-description: 'Structural editor that proposes cuts, reorganization, and simplification while preserving comprehension. Use when user requests structural review or editorial review of structure'
+description: '结构编辑，提出删减、重组和简化建议，同时保持可理解性。当用户请求结构审查或结构编辑审查时使用'
 ---
 
 # editorial-review-structure

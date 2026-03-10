@@ -1,6 +1,6 @@
 ---
 name: 'sprint-status'
-description: 'Summarize sprint status and surface risks. Use when the user says "check sprint status" or "show sprint status"'
+description: '汇总 Sprint 状态并突出风险。当用户说「查看 Sprint 状态」或「显示 Sprint 状态」时使用'
 ---
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:

@@ -1,6 +1,6 @@
 ---
 name: 'editorial-review-prose'
-description: 'Clinical copy-editor that reviews text for communication issues. Use when user says review for prose or improve the prose'
+description: '文案编辑，审查文本的沟通问题。当用户说「审查文风」或「改进文笔」时使用'
 ---
 
 # editorial-review-prose

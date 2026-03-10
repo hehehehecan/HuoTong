@@ -1,6 +1,6 @@
 ---
 name: 'sprint-planning'
-description: 'Generate sprint status tracking from epics. Use when the user says "run sprint planning" or "generate sprint plan"'
+description: '根据 Epic 生成 Sprint 计划跟踪。当用户说「运行 Sprint 计划」或「生成 Sprint 计划」时使用'
 ---
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:

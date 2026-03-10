@@ -1,6 +1,6 @@
 ---
 name: 'create-story'
-description: 'Creates a dedicated story file with all the context the agent will need to implement it later. Use when the user says "create the next story" or "create story [story identifier]"'
+description: '创建包含完整上下文的 Story 文件，供后续实现使用。当用户说「创建下一个 Story」或「创建 Story [story 标识]」时使用'
 ---
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:

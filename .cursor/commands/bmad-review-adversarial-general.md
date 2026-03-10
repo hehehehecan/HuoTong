@@ -1,6 +1,6 @@
 ---
 name: 'review-adversarial-general'
-description: 'Perform a Cynical Review and produce a findings report. Use when the user requests a critical review of something'
+description: '执行批判性审查并生成发现报告。当用户要求对某内容进行批判性审查时使用'
 ---
 
 # review-adversarial-general

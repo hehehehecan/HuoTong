@@ -1,6 +1,6 @@
 ---
 name: 'dev-story'
-description: 'Execute story implementation following a context filled story spec file. Use when the user says "dev this story [story file]" or "implement the next story in the sprint plan"'
+description: '根据包含完整上下文的 Story 规格文件执行实现。当用户说「开发此 Story [story 文件]」或「实现 Sprint 计划中的下一个 Story」时使用'
 ---
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:

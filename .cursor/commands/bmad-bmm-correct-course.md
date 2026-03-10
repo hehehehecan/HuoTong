@@ -1,6 +1,6 @@
 ---
 name: 'correct-course'
-description: 'Manage significant changes during sprint execution. Use when the user says "correct course" or "propose sprint change"'
+description: '在 Sprint 执行期间管理重大变更。当用户说「纠偏」或「提议 Sprint 变更」时使用'
 ---
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:

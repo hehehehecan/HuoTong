@@ -1,6 +1,6 @@
 ---
 name: 'shard-doc'
-description: 'Splits large markdown documents into smaller, organized files based on level 2 (default) sections. Use if the user says perform shard document'
+description: '将大型 Markdown 文档按二级标题（默认）拆分为更小、组织有序的文件。当用户说「执行文档拆分」时使用'
 ---
 
 # shard-doc

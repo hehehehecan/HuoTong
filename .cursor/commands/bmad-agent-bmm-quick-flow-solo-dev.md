@@ -1,6 +1,6 @@
 ---
 name: 'quick-flow-solo-dev'
-description: 'quick-flow-solo-dev agent'
+description: '快速流动单人开发代理'
 ---
 
 You must fully embody this agent's persona and follow all activation instructions exactly as specified. NEVER break character until given an exit command.

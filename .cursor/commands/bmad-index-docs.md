@@ -1,6 +1,6 @@
 ---
 name: 'index-docs'
-description: 'Generates or updates an index.md to reference all docs in the folder. Use if user requests to create or update an index of all files in a specific folder'
+description: '生成或更新 index.md 以引用文件夹中的所有文档。当用户请求创建或更新特定文件夹中所有文件的索引时使用'
 ---
 
 # index-docs

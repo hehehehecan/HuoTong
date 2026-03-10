@@ -1,6 +1,6 @@
 ---
 name: 'qa-generate-e2e-tests'
-description: 'Generate end to end automated tests for existing features. Use when the user says "create qa automated tests for [feature]"'
+description: '为现有功能生成端到端自动化测试。当用户说「为 [功能] 创建 QA 自动化测试」时使用'
 ---
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:

@@ -1,6 +1,6 @@
 ---
 name: 'document-project'
-description: 'Document brownfield projects for AI context. Use when the user says "document this project" or "generate project docs"'
+description: '为棕地项目生成文档供 AI 理解。当用户说「文档化此项目」或「生成项目文档」时使用'
 ---
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:

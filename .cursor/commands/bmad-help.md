@@ -1,6 +1,6 @@
 ---
 name: 'help'
-description: 'Analyzes what is done and the users query and offers advice on what to do next. Use if user says what should I do next or what do I do now'
+description: '分析已完成的工作和用户查询，建议下一步操作。当用户说「我接下来该做什么」或「现在做什么」时使用'
 ---
 
 # help

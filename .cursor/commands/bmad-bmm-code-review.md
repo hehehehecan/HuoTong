@@ -1,6 +1,6 @@
 ---
 name: 'code-review'
-description: 'Perform adversarial code review finding specific issues. Use when the user says "run code review" or "review this code"'
+description: '执行对抗性代码审查，发现具体问题。当用户说「运行代码审查」或「审查此代码」时使用'
 ---
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:
