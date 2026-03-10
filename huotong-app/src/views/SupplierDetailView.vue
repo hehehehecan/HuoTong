@@ -3,14 +3,22 @@ import { ref, reactive, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Form as VanForm, Field as VanField, Button as VanButton, showToast, showConfirmDialog } from 'vant'
 import { useSuppliers } from '../composables/useSuppliers'
+import { usePurchaseOrders, type PurchaseOrderWithSupplier } from '../composables/usePurchaseOrders'
+import { usePayables } from '../composables/usePayables'
 
 const router = useRouter()
 const route = useRoute()
 const { getById, update, remove } = useSuppliers()
+const { list: listPurchaseOrders } = usePurchaseOrders()
+const { listGroupedBySupplier } = usePayables()
 
 const supplierId = ref<string | undefined>(route.params.id as string)
 const loading = ref(false)
 const submitting = ref(false)
+const purchaseOrdersLoading = ref(false)
+const purchaseOrders = ref<PurchaseOrderWithSupplier[]>([])
+const totalUnpaid = ref<number>(0)
+
 const form = reactive({
   name: '',
   contact: '',
@@ -58,11 +66,50 @@ async function loadSupplier() {
   }
 }
 
+async function loadSupplierExtras(id: string) {
+  purchaseOrdersLoading.value = true
+  try {
+    const [orders, summaries] = await Promise.all([
+      listPurchaseOrders({ supplier_id: id }),
+      listGroupedBySupplier(),
+    ])
+    purchaseOrders.value = (orders ?? []).slice(0, 20)
+    const summary = summaries.find((s) => s.supplier_id === id)
+    totalUnpaid.value = summary?.total_unpaid ?? 0
+  } catch {
+    purchaseOrders.value = []
+    totalUnpaid.value = 0
+  } finally {
+    purchaseOrdersLoading.value = false
+  }
+}
+
+function formatMoney(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(2) : '0.00'
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function getStatusText(status: string): string {
+  return status === 'confirmed' ? '已确认' : '草稿'
+}
+
+function goToPurchaseOrder(id: string) {
+  router.push({ name: 'purchase-order-detail', params: { id } })
+}
+
 watch(
   () => route.params.id as string | undefined,
   (id) => {
     supplierId.value = id
     void loadSupplier()
+    if (id) void loadSupplierExtras(id)
   },
   { immediate: true }
 )
@@ -173,6 +220,31 @@ async function onDelete() {
         </van-button>
       </div>
     </van-form>
+
+    <div v-if="supplierId" class="supplier-extras">
+      <div class="extras-section">
+        <div class="extras-title">应付账款汇总</div>
+        <div class="total-unpaid">总欠款：¥{{ formatMoney(totalUnpaid) }}</div>
+      </div>
+      <div class="extras-section">
+        <div class="extras-title">历史进货单</div>
+        <van-loading v-if="purchaseOrdersLoading" size="24px" class="extras-loading" />
+        <van-empty v-else-if="purchaseOrders.length === 0" description="暂无进货单" class="extras-empty" />
+        <div v-else class="order-list">
+          <div
+            v-for="order in purchaseOrders"
+            :key="order.id"
+            class="order-item"
+            @click="goToPurchaseOrder(order.id)"
+          >
+            <span class="order-no">{{ order.order_no }}</span>
+            <span class="order-date">{{ formatDate(order.created_at) }}</span>
+            <span class="order-amount">¥{{ formatMoney(Number(order.total_amount)) }}</span>
+            <span class="order-status">{{ getStatusText(order.status) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -193,5 +265,75 @@ async function onDelete() {
   margin-top: 0.75rem;
   min-height: 48px;
   font-size: 16px;
+}
+
+.supplier-extras {
+  margin-top: 1.5rem;
+  padding: 0 16px;
+}
+
+.extras-section {
+  background: #f7f8fa;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.extras-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #323233;
+  margin-bottom: 8px;
+}
+
+.total-unpaid {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ee0a24;
+}
+
+.extras-loading,
+.extras-empty {
+  padding: 16px 0;
+}
+
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.order-no {
+  font-weight: 500;
+  color: #323233;
+  flex: 1;
+  min-width: 0;
+}
+
+.order-date {
+  color: #969799;
+  margin: 0 8px;
+}
+
+.order-amount {
+  font-weight: 500;
+  color: #323233;
+  margin-right: 8px;
+}
+
+.order-status {
+  font-size: 12px;
+  color: #969799;
 }
 </style>

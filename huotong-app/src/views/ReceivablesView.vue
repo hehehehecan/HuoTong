@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
   useReceivables,
@@ -7,6 +8,7 @@ import {
   type ReceivableWithOrder,
 } from '../composables/useReceivables'
 
+const router = useRouter()
 const { loading, listGroupedByCustomer, listByCustomer, recordPayment } = useReceivables()
 
 const summaries = ref<CustomerReceivableSummary[]>([])
@@ -108,6 +110,14 @@ function openPaymentPopup(item: ReceivableWithOrder) {
   paymentPopupVisible.value = true
 }
 
+function goToSaleOrder(saleOrderId: string | undefined) {
+  if (!saleOrderId?.trim()) {
+    showToast('关联单据不存在')
+    return
+  }
+  router.push({ name: 'sale-order-detail', params: { id: saleOrderId } })
+}
+
 function closePaymentPopup() {
   paymentPopupVisible.value = false
   paymentTarget.value = null
@@ -203,8 +213,24 @@ onMounted(() => {
                 <div class="detail-row">
                   <span class="date">{{ formatDate(item.created_at) }}</span>
                 </div>
-                <div v-if="item.status === 'unpaid' || item.status === 'partial'" class="detail-row detail-actions">
-                  <van-button size="small" type="primary" @click="openPaymentPopup(item)">标记付款</van-button>
+                <div class="detail-row detail-actions">
+                  <van-button
+                    v-if="item.sale_order_id"
+                    size="small"
+                    type="default"
+                    plain
+                    @click="goToSaleOrder(item.sale_order_id)"
+                  >
+                    查看原始单据
+                  </van-button>
+                  <van-button
+                    v-if="item.status === 'unpaid' || item.status === 'partial'"
+                    size="small"
+                    type="primary"
+                    @click="openPaymentPopup(item)"
+                  >
+                    标记付款
+                  </van-button>
                 </div>
               </div>
             </template>

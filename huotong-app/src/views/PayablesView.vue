@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
   usePayables,
@@ -7,6 +8,7 @@ import {
   type PayableWithOrder,
 } from '../composables/usePayables'
 
+const router = useRouter()
 const { loading, listGroupedBySupplier, listBySupplier, recordPayment } = usePayables()
 
 const summaries = ref<SupplierPayableSummary[]>([])
@@ -100,6 +102,14 @@ async function onCollapseChange(name: string | number) {
       showToast('加载明细失败')
     }
   }
+}
+
+function goToPurchaseOrder(purchaseOrderId: string | undefined) {
+  if (!purchaseOrderId?.trim()) {
+    showToast('关联单据不存在')
+    return
+  }
+  router.push({ name: 'purchase-order-detail', params: { id: purchaseOrderId } })
 }
 
 function openPaymentPopup(item: PayableWithOrder) {
@@ -203,8 +213,24 @@ onMounted(() => {
                 <div class="detail-row">
                   <span class="date">{{ formatDate(item.created_at) }}</span>
                 </div>
-                <div v-if="item.status === 'unpaid' || item.status === 'partial'" class="detail-row detail-actions">
-                  <van-button size="small" type="primary" @click="openPaymentPopup(item)">标记付款</van-button>
+                <div class="detail-row detail-actions">
+                  <van-button
+                    v-if="item.purchase_order_id"
+                    size="small"
+                    type="default"
+                    plain
+                    @click="goToPurchaseOrder(item.purchase_order_id)"
+                  >
+                    查看原始单据
+                  </van-button>
+                  <van-button
+                    v-if="item.status === 'unpaid' || item.status === 'partial'"
+                    size="small"
+                    type="primary"
+                    @click="openPaymentPopup(item)"
+                  >
+                    标记付款
+                  </van-button>
                 </div>
               </div>
             </template>

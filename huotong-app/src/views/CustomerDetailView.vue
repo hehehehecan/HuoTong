@@ -3,14 +3,22 @@ import { ref, reactive, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Form as VanForm, Field as VanField, Button as VanButton, showToast, showConfirmDialog } from 'vant'
 import { useCustomers } from '../composables/useCustomers'
+import { useSaleOrders, type SaleOrderWithCustomer } from '../composables/useSaleOrders'
+import { useReceivables } from '../composables/useReceivables'
 
 const router = useRouter()
 const route = useRoute()
 const { getById, update, remove } = useCustomers()
+const { list: listSaleOrders } = useSaleOrders()
+const { listGroupedByCustomer } = useReceivables()
 
 const customerId = ref<string | undefined>(route.params.id as string)
 const loading = ref(false)
 const submitting = ref(false)
+const saleOrdersLoading = ref(false)
+const saleOrders = ref<SaleOrderWithCustomer[]>([])
+const totalUnpaid = ref<number>(0)
+
 const form = reactive({
   name: '',
   phone: '',
@@ -55,11 +63,50 @@ async function loadCustomer() {
   }
 }
 
+async function loadCustomerExtras(id: string) {
+  saleOrdersLoading.value = true
+  try {
+    const [orders, summaries] = await Promise.all([
+      listSaleOrders({ customer_id: id }),
+      listGroupedByCustomer(),
+    ])
+    saleOrders.value = (orders ?? []).slice(0, 20)
+    const summary = summaries.find((s) => s.customer_id === id)
+    totalUnpaid.value = summary?.total_unpaid ?? 0
+  } catch {
+    saleOrders.value = []
+    totalUnpaid.value = 0
+  } finally {
+    saleOrdersLoading.value = false
+  }
+}
+
+function formatMoney(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(2) : '0.00'
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function getStatusText(status: string): string {
+  return status === 'confirmed' ? '已确认' : '草稿'
+}
+
+function goToSaleOrder(id: string) {
+  router.push({ name: 'sale-order-detail', params: { id } })
+}
+
 watch(
   () => route.params.id as string | undefined,
   (id) => {
     customerId.value = id
     void loadCustomer()
+    if (id) void loadCustomerExtras(id)
   },
   { immediate: true }
 )
@@ -164,6 +211,31 @@ async function onDelete() {
         </van-button>
       </div>
     </van-form>
+
+    <div v-if="customerId" class="customer-extras">
+      <div class="extras-section">
+        <div class="extras-title">应收账款汇总</div>
+        <div class="total-unpaid">总欠款：¥{{ formatMoney(totalUnpaid) }}</div>
+      </div>
+      <div class="extras-section">
+        <div class="extras-title">历史出货单</div>
+        <van-loading v-if="saleOrdersLoading" size="24px" class="extras-loading" />
+        <van-empty v-else-if="saleOrders.length === 0" description="暂无出货单" class="extras-empty" />
+        <div v-else class="order-list">
+          <div
+            v-for="order in saleOrders"
+            :key="order.id"
+            class="order-item"
+            @click="goToSaleOrder(order.id)"
+          >
+            <span class="order-no">{{ order.order_no }}</span>
+            <span class="order-date">{{ formatDate(order.created_at) }}</span>
+            <span class="order-amount">¥{{ formatMoney(Number(order.total_amount)) }}</span>
+            <span class="order-status">{{ getStatusText(order.status) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -184,5 +256,75 @@ async function onDelete() {
   margin-top: 0.75rem;
   min-height: 48px;
   font-size: 16px;
+}
+
+.customer-extras {
+  margin-top: 1.5rem;
+  padding: 0 16px;
+}
+
+.extras-section {
+  background: #f7f8fa;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.extras-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #323233;
+  margin-bottom: 8px;
+}
+
+.total-unpaid {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ee0a24;
+}
+
+.extras-loading,
+.extras-empty {
+  padding: 16px 0;
+}
+
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.order-no {
+  font-weight: 500;
+  color: #323233;
+  flex: 1;
+  min-width: 0;
+}
+
+.order-date {
+  color: #969799;
+  margin: 0 8px;
+}
+
+.order-amount {
+  font-weight: 500;
+  color: #323233;
+  margin-right: 8px;
+}
+
+.order-status {
+  font-size: 12px;
+  color: #969799;
 }
 </style>
