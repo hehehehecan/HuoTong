@@ -2,10 +2,57 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { showToast } from 'vant'
 import { useProducts } from '../composables/useProducts'
+import { adjustStock } from '../composables/useInventory'
+import type { Product } from '../composables/useProducts'
 
 const { products, loading, fetchAll, search } = useProducts()
 const refreshing = ref(false)
 const searchKeyword = ref('')
+
+const adjustPopupVisible = ref(false)
+const adjustProduct = ref<Product | null>(null)
+const adjustNewStock = ref(0)
+const adjustReason = ref('')
+const adjustSubmitting = ref(false)
+
+function openAdjust(product: Product) {
+  adjustProduct.value = product
+  adjustNewStock.value = product.stock
+  adjustReason.value = ''
+  adjustPopupVisible.value = true
+}
+
+function closeAdjustPopup() {
+  adjustPopupVisible.value = false
+  adjustProduct.value = null
+  adjustReason.value = ''
+}
+
+async function submitAdjust() {
+  const product = adjustProduct.value
+  if (!product) return
+  const reason = adjustReason.value.trim()
+  if (!reason) {
+    showToast({ type: 'fail', message: '请填写调整原因' })
+    return
+  }
+  const newStock = Math.floor(Number(adjustNewStock.value))
+  if (Number.isNaN(newStock) || newStock < 0) {
+    showToast({ type: 'fail', message: '请输入有效的库存数量（≥0）' })
+    return
+  }
+  adjustSubmitting.value = true
+  try {
+    await adjustStock(product.id, newStock, reason)
+    showToast({ type: 'success', message: '调整成功' })
+    closeAdjustPopup()
+    await runSearch({ silent: true })
+  } catch (e) {
+    showToast({ type: 'fail', message: (e as Error)?.message || '调整失败，请重试' })
+  } finally {
+    adjustSubmitting.value = false
+  }
+}
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 async function runSearch(options?: { silent?: boolean }): Promise<void> {
@@ -77,6 +124,8 @@ onUnmounted(() => {
             :key="p.id"
             :class="{ 'cell-low-stock': p.stock === 0 }"
             class="inventory-cell"
+            clickable
+            @click="openAdjust(p)"
           >
             <template #title>
               <span class="product-name">{{ p.name }}</span>
@@ -84,6 +133,7 @@ onUnmounted(() => {
             </template>
             <template #label>
               <span class="product-spec">{{ p.spec || '—' }}</span>
+              <span class="adjust-link">调整库存</span>
             </template>
             <template #value>
               <span :class="{ 'stock-zero': p.stock === 0 }" class="stock-value">{{ p.stock }}</span>
@@ -92,6 +142,54 @@ onUnmounted(() => {
           </van-cell>
         </van-cell-group>
     </van-pull-refresh>
+
+    <van-popup
+      v-model:show="adjustPopupVisible"
+      position="bottom"
+      round
+      :style="{ padding: '16px 16px 24px' }"
+      @closed="closeAdjustPopup"
+    >
+      <div v-if="adjustProduct" class="adjust-popup">
+        <div class="adjust-title">调整库存</div>
+        <div class="adjust-info">
+          <div class="adjust-row">
+            <span class="adjust-label">商品</span>
+            <span class="adjust-value">{{ adjustProduct.name }}</span>
+          </div>
+          <div class="adjust-row">
+            <span class="adjust-label">规格</span>
+            <span class="adjust-value">{{ adjustProduct.spec || '—' }}</span>
+          </div>
+          <div class="adjust-row">
+            <span class="adjust-label">当前库存</span>
+            <span class="adjust-value">{{ adjustProduct.stock }} 件</span>
+          </div>
+        </div>
+        <van-field
+          v-model="adjustNewStock"
+          type="number"
+          label="调整后库存"
+          placeholder="请输入数量"
+          :min="0"
+          :disabled="adjustSubmitting"
+        />
+        <van-field
+          v-model="adjustReason"
+          type="textarea"
+          label="调整原因"
+          placeholder="请填写调整原因（必填）"
+          rows="2"
+          :disabled="adjustSubmitting"
+        />
+        <div class="adjust-buttons">
+          <van-button block type="default" @click="closeAdjustPopup">取消</van-button>
+          <van-button block type="primary" :loading="adjustSubmitting" class="adjust-confirm" @click="submitAdjust">
+            确认
+          </van-button>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
@@ -143,6 +241,61 @@ onUnmounted(() => {
 .low-tag {
   margin-left: 8px;
   vertical-align: middle;
+}
+
+.adjust-link {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--van-primary-color);
+}
+
+.adjust-popup {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.adjust-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.adjust-info {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: var(--van-gray-1);
+  border-radius: 8px;
+}
+
+.adjust-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.adjust-row:last-child {
+  margin-bottom: 0;
+}
+
+.adjust-label {
+  color: var(--van-gray-6);
+  font-size: 14px;
+}
+
+.adjust-value {
+  font-size: 14px;
+  color: var(--van-text-color);
+}
+
+.adjust-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.adjust-confirm {
+  margin-top: 4px;
 }
 
 .empty-hint {
