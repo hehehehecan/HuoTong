@@ -44,6 +44,10 @@ function goToNew() {
   router.push('/customers/new')
 }
 
+function goToDetail(id: string) {
+  router.push(`/customers/${id}`)
+}
+
 const isSearchEmpty =
   computed(() => searchKeyword.value.trim() !== '' && customers.value.length === 0)
 
@@ -76,6 +80,8 @@ onUnmounted(() => {
             :title="c.name"
             :label="c.phone || '—'"
             class="customer-cell"
+            is-link
+            @click="goToDetail(c.id)"
           />
         </template>
         <div v-else-if="isSearchEmpty" class="empty">

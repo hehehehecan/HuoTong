@@ -110,5 +110,43 @@ export function useCustomers() {
     return result
   }
 
-  return { customers, loading, fetchAll, search, create }
+  async function getById(id: string): Promise<Customer | null> {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error) {
+      if (error.code === 'PGRST116') return null
+      throw error
+    }
+    return data as Customer
+  }
+
+  async function update(id: string, input: Partial<CustomerInput>): Promise<Customer | null> {
+    const payload: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    }
+    if (input.name !== undefined) payload.name = input.name.trim()
+    if (input.phone !== undefined) payload.phone = input.phone?.trim() ?? null
+    if (input.address !== undefined) payload.address = input.address?.trim() ?? null
+    if (payload.name === '') {
+      throw new Error('客户姓名不能为空')
+    }
+    const result = await withRetry(async () => {
+      const r = await supabase.from('customers').update(payload).eq('id', id).select().single()
+      if (r.error) throw r.error
+      return r.data as Customer
+    })
+    return result
+  }
+
+  async function remove(id: string): Promise<void> {
+    await withRetry(async () => {
+      const r = await supabase.from('customers').delete().eq('id', id)
+      if (r.error) throw r.error
+    })
+  }
+
+  return { customers, loading, fetchAll, search, create, getById, update, remove }
 }
