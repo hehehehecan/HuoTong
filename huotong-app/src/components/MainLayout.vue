@@ -10,6 +10,7 @@ const navTitle = computed(() => {
   const titleMap: Record<string, string> = {
     home: '首页',
     products: '商品',
+    customers: '客户',
     orders: '单据',
     more: '更多',
   }

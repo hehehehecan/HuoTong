@@ -45,6 +45,18 @@ const router = createRouter({
           meta: { title: '编辑商品' },
         },
         {
+          path: 'customers',
+          name: 'customers',
+          component: () => import('../views/CustomerListView.vue'),
+          meta: { title: '客户' },
+        },
+        {
+          path: 'customers/new',
+          name: 'customer-new',
+          component: () => import('../views/CustomerFormView.vue'),
+          meta: { title: '新增客户' },
+        },
+        {
           path: 'orders',
           name: 'orders',
           component: () => import('../views/PlaceholderView.vue'),

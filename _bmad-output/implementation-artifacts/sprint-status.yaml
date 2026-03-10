@@ -51,11 +51,11 @@ development_status:
   2-1-product-data-entry: done
   2-2-product-list-search: done
   2-3-product-edit-delete: done
-  2-4-batch-import-products: backlog
+  2-4-batch-import-products: done
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-1-customer-entry-list: backlog
+  epic-3: in-progress
+  3-1-customer-entry-list: done
   3-2-customer-edit-delete: backlog
   3-3-supplier-entry-list: backlog
   3-4-supplier-edit-delete: backlog
