@@ -17,6 +17,9 @@ import {
   Popup,
   Loading,
   Overlay,
+  Collapse,
+  CollapseItem,
+  Empty,
 } from 'vant'
 import 'vant/lib/index.css'
 import router from './router'
@@ -43,6 +46,9 @@ app.use(Dialog)
 app.use(Popup)
 app.use(Loading)
 app.use(Overlay)
+app.use(Collapse)
+app.use(CollapseItem)
+app.use(Empty)
 
 async function bootstrap() {
   const userStore = useUserStore()

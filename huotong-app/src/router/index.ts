@@ -130,8 +130,8 @@ const router = createRouter({
         {
           path: 'receivables',
           name: 'receivables',
-          component: () => import('../views/PlaceholderView.vue'),
-          meta: { title: '应收账款', message: '功能开发中，敬请期待' },
+          component: () => import('../views/ReceivablesView.vue'),
+          meta: { title: '应收账款' },
         },
       ],
     },

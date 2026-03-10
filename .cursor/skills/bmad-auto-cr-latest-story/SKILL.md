@@ -21,6 +21,7 @@ description: Automatically completes one BMAD code review cycle by detecting the
 - 所有沟通与提交信息使用中文。
 - 执行修复时，优先修复 High/Medium 问题。
 - 代码审查默认选择“修复问题”（等价于选项 1），避免只创建 action items。
+- 当用户触发本 skill（如“进行代码审核/做一次 CR/自动代码审查”）时，**视为已明确授权执行 Git 提交**；除非用户明确要求“只审查不提交”。
 - 提交信息中禁止出现 `Made-with: Cursor`、`Made with Cursor` 等工具标记。
 
 ## 自动检测目标 Story

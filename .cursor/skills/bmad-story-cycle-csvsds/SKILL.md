@@ -66,14 +66,19 @@ description: Runs a single BMAD story cycle in one window by executing Create St
    - 按 Tasks/Subtasks 顺序实现（red-green-refactor、写测试、跑测试、更新 story 内勾选与 File List/Change Log/Dev Agent Record）
    - 全部任务完成后将 story 状态设为 `review`，并更新 sprint-status 中该 story 为 `review`
 5. **自测**：按下方「自测规则」执行；循环结束后再进入 Step 4 指引。
+6. **本地验证清单**：DS 结束时（story 进入 review 后），**必须**将本轮回需要用户本地验证的内容写入共用文档 `{implementation_artifacts}/local-verification-checklist.md`：
+   - 在文档中**追加**一个新条目（不要覆盖已有条目）；
+   - 条目须包含：**story_key**（如 `4-2-sale-order-confirm`）、**循环完成日**（当日或 story 进入 review 的日期）、**验证项列表**（需用户在本机执行的操作与预期结果，逐条列出）、**已验证** 标志位（初始为 `否`）；
+   - 所有循环共用同一文件，文件中通过 story_key + 循环完成日标明是「哪一次循环」需要验证；用户完成验证后将该条目的 **已验证** 改为 `是`。
+   - 验证项内容来源：自测规则中「需要用户配合的」部分、或本轮 DS 完成时给用户的「建议你本地验证」列表，整理为简洁的步骤与预期结果。
 
 ### 自测规则
 
 - **能由 agent 独立完成的**：agent 必须自主完成（如运行 `npm run build`、启动 dev server 后用浏览器自动化访问页面、校验未登录重定向、校验错误提示文案、控制台无报错等）。
 - **登录页自动化**：若自测需在登录页点击「登录」按钮，**填写完邮箱和密码后必须先执行一次 `browser_snapshot`，再使用新 snapshot 中的 ref 点击登录按钮**。否则 Vue/Vant 会因输入触发重渲染，导致之前的元素 ref 失效（"Element reference is stale"），自动化点击会报错；手动点击无此问题。
 - **等待策略（提高自测效率）**：**不要在每个操作后都加固定长时间等待**（如 2～3 秒）。优先采用：① 用 `browser_wait_for` 的 **text** 或 **textGone** 条件等待（等某段文字出现或消失），页面就绪后立即继续；② 仅在必要时用短时等待（如 0.5～1 秒）再 `browser_snapshot` 判断；③ 只有导航跳转、提交表单等明显需要等响应的操作后，才用 1～2 秒等待。避免「navigate → 等 2s → fill → 等 2s → click → 等 2s」这种每步都等满的写法，自测会快很多。
-- **需要用户配合的**：明确给出提示，说明需要用户做什么、在何处操作、预期结果是什么（例如：「请在 Supabase Dashboard 创建测试账号，在浏览器打开 /login 用该账号登录，确认能跳转首页并刷新后仍为已登录；再点击退出登录确认跳回 /login」）。
-- 自测结果在循环结束时简要汇报：通过项、需用户验证项（及提示是否已给出）。
+- **需要用户配合的**：明确给出提示，说明需要用户做什么、在何处操作、预期结果是什么（例如：「请在 Supabase Dashboard 创建测试账号，在浏览器打开 /login 用该账号登录，确认能跳转首页并刷新后仍为已登录；再点击退出登录确认跳回 /login」）。**同时**将这些需用户本地验证的内容写入 `{implementation_artifacts}/local-verification-checklist.md`，追加新条目并标明 story_key、循环完成日、验证项列表、**已验证**：否；用户完成验证后将该条目的「已验证」改为「是」。
+- 自测结果在循环结束时简要汇报：通过项、需用户验证项（及提示是否已给出、是否已写入本地验证清单）。
 
 ### Step 4：可选 — 新窗口 Code Review
 
@@ -91,7 +96,7 @@ description: Runs a single BMAD story cycle in one window by executing Create St
 - **HALT 处理**：任一步触发 workflow 内 HALT（如无 backlog story、用户选择退出）则停止后续步骤，并向用户说明原因与可选操作。
 - **语言**：与用户和文档的交互使用 config 中的 `communication_language`（如中文）。
 - **提交**：本 skill 不执行任何 Git 提交；提交由用户在 CR 之后自行完成。
-- **自测**：需要自测时，agent 自主完成可自动化部分（构建、浏览器访问、重定向与文案校验等）；需用户配合时给出清晰提示（操作步骤、预期结果）。
+- **自测**：需要自测时，agent 自主完成可自动化部分（构建、浏览器访问、重定向与文案校验等）；需用户配合时给出清晰提示（操作步骤、预期结果），并**将需用户本地验证的内容写入共用文档** `{implementation_artifacts}/local-verification-checklist.md`，标明该次循环（story_key + 循环完成日）及 **已验证** 标志位（初始为否，用户完成验证后改为是）。
 
 ## 可选：仅执行其中一段
 

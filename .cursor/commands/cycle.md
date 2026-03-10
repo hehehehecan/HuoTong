@@ -11,8 +11,9 @@ description: 'Run one BMAD story cycle (Create Story → Validate Story → Dev 
 1. **加载并严格遵循** 技能文件：`{project-root}/.cursor/skills/bmad-story-cycle-csvsds/SKILL.md` 中的全部说明。
 2. 先执行 **Phase 0**：读取 `_bmad-output/implementation-artifacts/sprint-status.yaml`，按 SKILL 规定检测进度并确定入口（CS / VS / DS）。
 3. 从选定入口开始按顺序执行 Step 1（CS）、Step 2（VS）、Step 3（DS），直至本循环结束或 HALT。
-4. 变量与路径从 `_bmad/bmm/config.yaml` 解析；`{project-root}` 为仓库根目录。
-5. 与用户和文档的交互使用 config 中的 `communication_language`（如中文）。
+4. **DS 结束时**：将需用户本地验证的内容写入 `_bmad-output/implementation-artifacts/local-verification-checklist.md`（追加条目，标明该次循环的 story_key、循环完成日、验证项、**已验证** 标志位初始为否）；所有循环共用该文件，用户完成验证后将对应条目的「已验证」改为是。
+5. 变量与路径从 `_bmad/bmm/config.yaml` 解析；`{project-root}` 为仓库根目录。
+6. 与用户和文档的交互使用 config 中的 `communication_language`（如中文）。
 </steps>
 
 若用户明确说「只做 CS」「只做 CS 和 VS」等，则仅执行其指定的连续子序列，并在结束时说明下一步建议。
