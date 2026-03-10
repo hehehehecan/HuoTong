@@ -70,6 +70,8 @@ description: Runs a single BMAD story cycle in one window by executing Create St
 ### 自测规则
 
 - **能由 agent 独立完成的**：agent 必须自主完成（如运行 `npm run build`、启动 dev server 后用浏览器自动化访问页面、校验未登录重定向、校验错误提示文案、控制台无报错等）。
+- **登录页自动化**：若自测需在登录页点击「登录」按钮，**填写完邮箱和密码后必须先执行一次 `browser_snapshot`，再使用新 snapshot 中的 ref 点击登录按钮**。否则 Vue/Vant 会因输入触发重渲染，导致之前的元素 ref 失效（"Element reference is stale"），自动化点击会报错；手动点击无此问题。
+- **等待策略（提高自测效率）**：**不要在每个操作后都加固定长时间等待**（如 2～3 秒）。优先采用：① 用 `browser_wait_for` 的 **text** 或 **textGone** 条件等待（等某段文字出现或消失），页面就绪后立即继续；② 仅在必要时用短时等待（如 0.5～1 秒）再 `browser_snapshot` 判断；③ 只有导航跳转、提交表单等明显需要等响应的操作后，才用 1～2 秒等待。避免「navigate → 等 2s → fill → 等 2s → click → 等 2s」这种每步都等满的写法，自测会快很多。
 - **需要用户配合的**：明确给出提示，说明需要用户做什么、在何处操作、预期结果是什么（例如：「请在 Supabase Dashboard 创建测试账号，在浏览器打开 /login 用该账号登录，确认能跳转首页并刷新后仍为已登录；再点击退出登录确认跳回 /login」）。
 - 自测结果在循环结束时简要汇报：通过项、需用户验证项（及提示是否已给出）。
 

@@ -78,6 +78,11 @@ _本文件包含 AI 代理在本项目中实现代码时必须遵守的关键规
 - 密码：`hezhangcan199873`
 - 用途：本地开发、E2E/手动验收、文档与脚本中的示例。仅限开发/测试环境使用，禁止在生产环境使用或泄露。
 
+### 浏览器自动化（Agent 自测 / E2E）
+
+- 登录页（`/login`）使用 Vant Form + Field，填写邮箱和密码后会触发 Vue 重渲染。**在自动化中点击「登录」前必须先做一次新的 snapshot（如 `browser_snapshot`），再用新 snapshot 中的按钮 ref 点击**，否则会报 "Element reference is stale"；手动点击无此问题。登录按钮已设置 `data-testid="login-submit"` 便于按选择器定位。
+- **等待策略**：避免每个操作后都加固定 2～3 秒等待。优先用 `browser_wait_for` 的 **text** / **textGone** 条件等待；必要时用 0.5～1 秒短等待后 snapshot 再判断；仅对导航、提交等明显需等响应的操作用 1～2 秒。可显著缩短自测时间。
+
 ---
 
 _Generated for HuoTong project; update as conventions evolve._
