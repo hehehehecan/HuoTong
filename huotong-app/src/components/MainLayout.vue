@@ -11,6 +11,7 @@ const navTitle = computed(() => {
     home: '首页',
     products: '商品',
     customers: '客户',
+    suppliers: '供应商',
     orders: '单据',
     more: '更多',
   }

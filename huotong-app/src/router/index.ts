@@ -63,6 +63,18 @@ const router = createRouter({
           meta: { title: '编辑客户' },
         },
         {
+          path: 'suppliers',
+          name: 'suppliers',
+          component: () => import('../views/SupplierListView.vue'),
+          meta: { title: '供应商' },
+        },
+        {
+          path: 'suppliers/new',
+          name: 'supplier-new',
+          component: () => import('../views/SupplierFormView.vue'),
+          meta: { title: '新增供应商' },
+        },
+        {
           path: 'orders',
           name: 'orders',
           component: () => import('../views/PlaceholderView.vue'),
