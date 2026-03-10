@@ -76,6 +76,8 @@ onUnmounted(() => {
             :title="s.name"
             :label="s.contact ? `${s.contact}${s.phone ? ' · ' + s.phone : ''}` : (s.phone || '—')"
             class="supplier-cell"
+            is-link
+            @click="router.push(`/suppliers/${s.id}`)"
           />
         </template>
         <div v-else-if="isSearchEmpty" class="empty">

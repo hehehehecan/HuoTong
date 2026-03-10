@@ -113,5 +113,44 @@ export function useSuppliers() {
     return result
   }
 
-  return { suppliers, loading, fetchAll, search, create }
+  async function getById(id: string): Promise<Supplier | null> {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error) {
+      if (error.code === 'PGRST116') return null
+      throw error
+    }
+    return data as Supplier
+  }
+
+  async function update(id: string, input: Partial<SupplierInput>): Promise<Supplier | null> {
+    const payload: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    }
+    if (input.name !== undefined) payload.name = input.name.trim()
+    if (input.contact !== undefined) payload.contact = input.contact?.trim() ?? null
+    if (input.phone !== undefined) payload.phone = input.phone?.trim() ?? null
+    if (input.category !== undefined) payload.category = input.category?.trim() ?? null
+    if (payload.name === '') {
+      throw new Error('供应商名称不能为空')
+    }
+    const result = await withRetry(async () => {
+      const r = await supabase.from('suppliers').update(payload).eq('id', id).select().single()
+      if (r.error) throw r.error
+      return r.data as Supplier
+    })
+    return result
+  }
+
+  async function remove(id: string): Promise<void> {
+    await withRetry(async () => {
+      const r = await supabase.from('suppliers').delete().eq('id', id)
+      if (r.error) throw r.error
+    })
+  }
+
+  return { suppliers, loading, fetchAll, search, create, getById, update, remove }
 }

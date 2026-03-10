@@ -58,7 +58,7 @@ development_status:
   3-1-customer-entry-list: done
   3-2-customer-edit-delete: done
   3-3-supplier-entry-list: done
-  3-4-supplier-edit-delete: backlog
+  3-4-supplier-edit-delete: done
   epic-3-retrospective: optional
 
   epic-4: backlog
