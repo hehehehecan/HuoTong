@@ -23,3 +23,12 @@ npm run dev
 ```bash
 npm run build
 ```
+
+## 部署到 Vercel
+
+1. 将代码推送到 Git 仓库（GitHub/GitLab/Bitbucket）。
+2. 在 [Vercel](https://vercel.com) 导入该仓库，**Root Directory** 设置为 `huotong-app`（若仓库根即本目录则留空）。
+3. 在项目 **Settings → Environment Variables** 中配置：
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. 部署完成后，家人可通过 Vercel 提供的 HTTPS 域名在手机/电脑浏览器访问应用；推送新代码后 Vercel 会自动重新构建并上线。

@@ -1,22 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { supabase } from '../lib/supabase'
-import { useUserStore } from '../stores/user'
 import { Button as VanButton } from 'vant'
+import { useUserStore } from '../stores/user'
 
 const router = useRouter()
 const userStore = useUserStore()
-const supabaseConnected = ref<boolean | null>(null)
 
-onMounted(async () => {
-  try {
-    const { error } = await supabase.auth.getSession()
-    supabaseConnected.value = !error
-  } catch {
-    supabaseConnected.value = false
-  }
-})
+function goTo(path: string) {
+  router.push(path)
+}
 
 async function logout() {
   await userStore.logout()
@@ -26,12 +18,37 @@ async function logout() {
 
 <template>
   <div class="home">
-    <h1>货通 HuoTong</h1>
-    <p>项目脚手架已就绪：Vue 3 + Vite + TypeScript + Vant + Pinia + Vue Router + Supabase</p>
-    <VanButton type="primary" block>Vant 按钮（验证组件渲染）</VanButton>
-    <p v-if="supabaseConnected === true" class="status ok">Supabase 连接正常</p>
-    <p v-else-if="supabaseConnected === false" class="status warn">Supabase 未配置或连接失败，请检查 .env</p>
-    <p v-else class="status">正在检测 Supabase 连接…</p>
+    <h1 class="home-title">货通 HuoTong</h1>
+    <p class="home-desc">选择要进行的操作</p>
+    <div class="shortcuts">
+      <VanButton
+        type="primary"
+        size="large"
+        block
+        class="shortcut-btn"
+        @click="goTo('/sale-orders/new')"
+      >
+        新建出货单
+      </VanButton>
+      <VanButton
+        type="primary"
+        size="large"
+        block
+        class="shortcut-btn"
+        @click="goTo('/purchase-orders/new')"
+      >
+        新建进货单
+      </VanButton>
+      <VanButton
+        type="primary"
+        size="large"
+        block
+        class="shortcut-btn"
+        @click="goTo('/receivables')"
+      >
+        查应收
+      </VanButton>
+    </div>
     <div class="logout-wrap">
       <VanButton type="default" block @click="logout">退出登录</VanButton>
     </div>
@@ -43,14 +60,23 @@ async function logout() {
   padding: 1rem;
   font-size: 16px;
 }
-.status {
-  margin-top: 1rem;
+.home-title {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
 }
-.status.ok {
-  color: green;
+.home-desc {
+  color: var(--van-gray-6, #969799);
+  margin-bottom: 1.5rem;
 }
-.status.warn {
-  color: orange;
+.shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+/* 触控区域最小 44x44px，Vant large 按钮已满足，此处保证最小高度 */
+.shortcut-btn {
+  min-height: 48px;
+  font-size: 16px;
 }
 .logout-wrap {
   margin-top: 2rem;
