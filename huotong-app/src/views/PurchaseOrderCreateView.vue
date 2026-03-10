@@ -19,9 +19,11 @@ interface OrderItemRow {
 
 const { fetchAll: fetchSuppliers, search: searchSuppliers } = useSuppliers()
 const { search: searchProducts, fetchAll: fetchProducts } = useProducts()
-const { createDraft, loading: saving } = usePurchaseOrders()
+const { createDraft, loading: saving, recognizeFromImage } = usePurchaseOrders()
 const router = useRouter()
 
+const recognizing = ref(false)
+const fileInputRef = ref<HTMLInputElement | null>(null)
 const supplierPopupVisible = ref(false)
 const productPopupVisible = ref(false)
 const supplierSearchKeyword = ref('')
@@ -29,10 +31,12 @@ const productSearchKeyword = ref('')
 const supplierList = ref<Supplier[]>([])
 const productList = ref<Product[]>([])
 const selectedSupplier = ref<Supplier | null>(null)
+const unmatchedSupplierName = ref('')
 const items = ref<OrderItemRow[]>([])
 const quantityInput = ref('')
 const unitPriceInput = ref('')
 const selectedProductForQty = ref<Product | null>(null)
+const replaceItemIndex = ref<number | null>(null)
 
 function normalizeMoney(value: number): number {
   const n = Number(value)
@@ -87,6 +91,7 @@ function openSupplierPopup() {
 
 function selectSupplier(s: Supplier) {
   selectedSupplier.value = s
+  unmatchedSupplierName.value = ''
   supplierPopupVisible.value = false
 }
 
@@ -95,6 +100,17 @@ function openProductPopup() {
   selectedProductForQty.value = null
   quantityInput.value = ''
   unitPriceInput.value = ''
+  replaceItemIndex.value = null
+  productPopupVisible.value = true
+  void loadProducts()
+}
+
+function openProductPopupForReplace(index: number) {
+  productSearchKeyword.value = ''
+  selectedProductForQty.value = null
+  quantityInput.value = ''
+  unitPriceInput.value = ''
+  replaceItemIndex.value = index
   productPopupVisible.value = true
   void loadProducts()
 }
@@ -115,19 +131,32 @@ function confirmAddProduct() {
   }
   const product = p
   const unitPrice = Number.isFinite(price) && price >= 0 ? normalizeMoney(price) : Math.max(0, product.buy_price ?? 0)
-  const existing = items.value.find((i) => i.product_id === product.id)
-  if (existing) {
-    existing.quantity += normalizeQuantity(qty)
-    existing.unit_price = unitPrice
-  } else {
-    items.value.push({
+  const idx = replaceItemIndex.value
+  if (idx !== null && idx >= 0 && idx < items.value.length) {
+    items.value[idx] = {
       product_id: product.id,
       name: product.name,
       spec: product.spec,
       buy_price: product.buy_price ?? 0,
       quantity: normalizeQuantity(qty),
       unit_price: unitPrice,
-    })
+    }
+    replaceItemIndex.value = null
+  } else {
+    const existing = items.value.find((i) => i.product_id === product.id)
+    if (existing) {
+      existing.quantity += normalizeQuantity(qty)
+      existing.unit_price = unitPrice
+    } else {
+      items.value.push({
+        product_id: product.id,
+        name: product.name,
+        spec: product.spec,
+        buy_price: product.buy_price ?? 0,
+        quantity: normalizeQuantity(qty),
+        unit_price: unitPrice,
+      })
+    }
   }
   productPopupVisible.value = false
   selectedProductForQty.value = null
@@ -150,7 +179,11 @@ function clampItemUnitPrice(row: OrderItemRow) {
 async function saveDraft() {
   if (!canSave.value) {
     if (!selectedSupplier.value) {
-      showToast('请选择供应商')
+      showToast(unmatchedSupplierName.value ? '请先手动选择供应商' : '请选择供应商')
+      return
+    }
+    if (items.value.some((i) => !i.product_id)) {
+      showToast('请为「需手动选择」的条目选择商品')
       return
     }
     if (items.value.length === 0 || !items.value.every((i) => i.quantity > 0)) {
@@ -161,7 +194,9 @@ async function saveDraft() {
   try {
     const order = await createDraft({
       supplier_id: selectedSupplier.value!.id,
-      items: items.value.map((i) => ({
+      items: items.value
+        .filter((i) => i.product_id)
+        .map((i) => ({
         product_id: i.product_id,
         quantity: normalizeQuantity(i.quantity),
         unit_price: Math.max(0, normalizeMoney(i.unit_price)),
@@ -183,6 +218,134 @@ function formatPrice(n: number) {
   return Number(n).toFixed(2)
 }
 
+/** 将图片压缩到 < 1MB 并返回 base64（data URL 去掉前缀） */
+function compressImageToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const estimateBase64Bytes = (dataUrl: string) => {
+      const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
+      const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0
+      return Math.floor((base64.length * 3) / 4) - padding
+    }
+    const toJpegDataUrl = (canvas: HTMLCanvasElement, quality: number) =>
+      canvas.toDataURL('image/jpeg', quality)
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const maxBytes = 1024 * 1024
+      let w = Math.max(1, img.width)
+      let h = Math.max(1, img.height)
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('Canvas not supported'))
+        return
+      }
+      let quality = 0.85
+      let attempts = 0
+      let dataUrl = ''
+      while (attempts < 12) {
+        canvas.width = w
+        canvas.height = h
+        ctx.clearRect(0, 0, w, h)
+        ctx.drawImage(img, 0, 0, w, h)
+        dataUrl = toJpegDataUrl(canvas, quality)
+        if (estimateBase64Bytes(dataUrl) <= maxBytes) {
+          const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
+          resolve(base64)
+          return
+        }
+        if (quality > 0.4) {
+          quality = Math.max(0.4, quality - 0.1)
+        } else {
+          w = Math.max(1, Math.floor(w * 0.85))
+          h = Math.max(1, Math.floor(h * 0.85))
+        }
+        attempts += 1
+      }
+      reject(new Error('Image too large after compression'))
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Failed to load image'))
+    }
+    img.src = url
+  })
+}
+
+function triggerPhotoRecognize() {
+  fileInputRef.value?.click()
+}
+
+async function onPhotoFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || !file.type.startsWith('image/')) {
+    showToast('请选择图片文件')
+    return
+  }
+  recognizing.value = true
+  try {
+    const base64 = await compressImageToBase64(file)
+    const result = await recognizeFromImage(base64)
+    if (!result) {
+      showToast('识别失败，请重新拍照或手动录入')
+      return
+    }
+    if (result.supplier_name) {
+      const suppliers = await searchSuppliers(result.supplier_name)
+      const first = suppliers[0]
+      if (first) {
+        selectedSupplier.value = first
+        unmatchedSupplierName.value = ''
+      } else {
+        selectedSupplier.value = null
+        unmatchedSupplierName.value = result.supplier_name
+        showToast(`未匹配到供应商「${result.supplier_name}」，请手动选择`)
+      }
+    } else {
+      unmatchedSupplierName.value = ''
+    }
+    for (const it of result.items) {
+      if (!it.name) continue
+      const products = await searchProducts(it.name)
+      const qty = normalizeQuantity(it.quantity)
+      const price = Math.max(0, normalizeMoney(it.unit_price))
+      if (products.length > 0) {
+        const prod = products[0]!
+        const existing = items.value.find((i) => i.product_id === prod.id)
+        if (existing) {
+          existing.quantity += qty
+          existing.unit_price = price || (prod.buy_price ?? 0)
+        } else {
+          items.value.push({
+            product_id: prod.id,
+            name: prod.name,
+            spec: prod.spec,
+            buy_price: prod.buy_price ?? 0,
+            quantity: qty,
+            unit_price: price || (prod.buy_price ?? 0),
+          })
+        }
+      } else {
+        items.value.push({
+          product_id: '',
+          name: `需手动选择：${it.name}`,
+          spec: '',
+          buy_price: price,
+          quantity: qty,
+          unit_price: price,
+        })
+      }
+    }
+  } catch {
+    showToast('识别失败，请重新拍照或手动录入')
+  } finally {
+    recognizing.value = false
+  }
+}
+
 onMounted(() => {
   void loadSuppliers().catch(() => {})
   void loadProducts().catch(() => {})
@@ -192,16 +355,21 @@ onMounted(() => {
 <template>
   <div class="purchase-order-create">
     <van-cell-group inset>
-      <van-cell title="选择供应商" :value="selectedSupplier?.name ?? '请选择'" is-link @click="openSupplierPopup" />
+      <van-cell
+        title="选择供应商"
+        :value="selectedSupplier?.name ?? (unmatchedSupplierName ? `需手动选择：${unmatchedSupplierName}` : '请选择')"
+        is-link
+        @click="openSupplierPopup"
+      />
     </van-cell-group>
 
     <div class="section-title">商品明细</div>
     <van-cell-group v-if="items.length" inset>
       <van-cell
         v-for="(row, index) in items"
-        :key="row.product_id + '-' + index"
+        :key="row.product_id ? row.product_id + '-' + index : 'unmatched-' + index"
         :title="row.name"
-        :label="row.spec || '—'"
+        :label="row.product_id ? (row.spec || '—') : '点击下方选择商品'"
       >
         <template #value>
           <div class="item-row">
@@ -224,8 +392,20 @@ onMounted(() => {
               />
             </div>
             <div class="subtotal">小计 ¥{{ formatPrice(rowSubtotal(row)) }}</div>
-            <van-button size="small" type="danger" plain class="remove-btn" @click="removeItem(index)">
-              删除
+            <template v-if="row.product_id">
+              <van-button size="small" type="danger" plain class="remove-btn" @click="removeItem(index)">
+                删除
+              </van-button>
+            </template>
+            <van-button
+              v-else
+              size="small"
+              type="primary"
+              plain
+              class="remove-btn"
+              @click="openProductPopupForReplace(index)"
+            >
+              选择商品
             </van-button>
           </div>
         </template>
@@ -236,6 +416,25 @@ onMounted(() => {
     <div class="footer-actions">
       <div class="total">合计：¥{{ formatPrice(totalAmount) }}</div>
       <div class="buttons">
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          class="hidden-file-input"
+          @change="onPhotoFileChange"
+        />
+        <van-button
+          type="primary"
+          plain
+          round
+          class="add-btn"
+          :loading="recognizing"
+          :disabled="recognizing"
+          @click="triggerPhotoRecognize"
+        >
+          拍照识别
+        </van-button>
         <van-button
           type="primary"
           plain
@@ -325,6 +524,12 @@ onMounted(() => {
         </van-button>
       </div>
     </van-popup>
+
+    <van-overlay :show="recognizing">
+      <div class="recognize-loading">
+        <van-loading type="spinner" size="32" vertical>正在识别...</van-loading>
+      </div>
+    </van-overlay>
   </div>
 </template>
 
@@ -412,5 +617,18 @@ onMounted(() => {
 .confirm-add {
   margin-top: 12px;
   margin-bottom: 8px;
+}
+.hidden-file-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.recognize-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
 }
 </style>

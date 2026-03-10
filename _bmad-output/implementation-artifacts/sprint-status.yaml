@@ -72,7 +72,7 @@ development_status:
   5-1-purchase-order-create: done
   5-2-purchase-order-confirm: done
   5-3-purchase-order-list-detail: done
-  5-4-photo-recognize-purchase: backlog
+  5-4-photo-recognize-purchase: done
   epic-5-retrospective: optional
 
   epic-6: backlog
