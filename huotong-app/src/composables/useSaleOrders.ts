@@ -22,6 +22,10 @@ export interface SaleOrderItem {
   subtotal: number
 }
 
+export interface SaleOrderItemWithProduct extends SaleOrderItem {
+  products?: { name: string; spec: string } | null
+}
+
 export interface SaleOrderItemInput {
   product_id: string
   quantity: number
@@ -47,6 +51,18 @@ function isNetworkError(err: PostgrestError | Error): boolean {
     msg.includes('failed to fetch') ||
     msg.includes('networkerror')
   )
+}
+
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
+function isNonDraftError(err: unknown): boolean {
+  const msg = getErrorMessage(err).toLowerCase()
+  if (msg.includes('order_not_draft')) return true
+  if (msg.includes('不是') && msg.includes('draft')) return true
+  if (msg.includes('not') && msg.includes('draft')) return true
+  return false
 }
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 1): Promise<T> {
@@ -152,5 +168,57 @@ export function useSaleOrders() {
     return (data ?? []) as SaleOrderItem[]
   }
 
-  return { loading, createDraft, getById, getItemsByOrderId }
+  async function getItemsWithProduct(orderId: string): Promise<SaleOrderItemWithProduct[]> {
+    const { data, error } = await supabase
+      .from('sale_order_items')
+      .select('*, products(name, spec)')
+      .eq('order_id', orderId)
+      .order('id')
+    if (error) throw error
+    return (data ?? []) as SaleOrderItemWithProduct[]
+  }
+
+  /** 确认出货：调用 RPC，成功无返回值；失败抛错或携带库存不足信息 */
+  async function confirm(orderId: string): Promise<void> {
+    loading.value = true
+    try {
+      try {
+        await withRetry(async () => {
+          const { error } = await supabase.rpc('confirm_sale_order', {
+            order_id: orderId,
+          })
+          if (error) throw error
+        })
+      } catch (e) {
+        // 网络超时后重试可能命中“非 draft”错误，回查状态避免误判失败。
+        if (isNonDraftError(e)) {
+          const latest = await getById(orderId)
+          if (latest?.status === 'confirmed') return
+        }
+        throw e
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /** 解析 RPC 错误：若为库存不足返回可展示文案，否则返回 null */
+  function parseConfirmError(err: unknown): string | null {
+    const msg = getErrorMessage(err)
+    const m = msg.match(/INSUFFICIENT_STOCK:(.+)/)
+    const payload = m?.[1]
+    if (payload) {
+      const parts = payload.split(',')
+      const name = parts[0] ?? '商品'
+      const current = parts[1] ?? '0'
+      const need = parts[2] ?? '0'
+      return `商品 ${name} 库存不足（当前 ${current} 件，需要 ${need} 件）`
+    }
+    if (isNonDraftError(err)) {
+      return '该出货单已不是草稿，请刷新后重试'
+    }
+    return null
+  }
+
+  return { loading, createDraft, getById, getItemsByOrderId, getItemsWithProduct, confirm, parseConfirmError }
 }

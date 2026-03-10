@@ -15,6 +15,7 @@ import {
   Search,
   Dialog,
   Popup,
+  Loading,
 } from 'vant'
 import 'vant/lib/index.css'
 import router from './router'
@@ -39,6 +40,7 @@ app.use(PullRefresh)
 app.use(Search)
 app.use(Dialog)
 app.use(Popup)
+app.use(Loading)
 
 async function bootstrap() {
   const userStore = useUserStore()

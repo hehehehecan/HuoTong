@@ -99,6 +99,12 @@ const router = createRouter({
           meta: { title: '新建出货单' },
         },
         {
+          path: 'sale-orders/:id',
+          name: 'sale-order-detail',
+          component: () => import('../views/SaleOrderDetailView.vue'),
+          meta: { title: '出货单详情' },
+        },
+        {
           path: 'purchase-orders/new',
           name: 'purchase-order-new',
           component: () => import('../views/PlaceholderView.vue'),

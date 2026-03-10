@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useCustomers } from '../composables/useCustomers'
 import { useProducts } from '../composables/useProducts'
@@ -19,6 +20,7 @@ interface OrderItemRow {
 const { fetchAll: fetchCustomers, search: searchCustomers } = useCustomers()
 const { search: searchProducts, fetchAll: fetchProducts } = useProducts()
 const { createDraft, loading: saving } = useSaleOrders()
+const router = useRouter()
 
 const customerPopupVisible = ref(false)
 const productPopupVisible = ref(false)
@@ -159,6 +161,7 @@ async function saveDraft() {
     })
     if (order) {
       showToast({ type: 'success', message: '已保存' })
+      router.push(`/sale-orders/${order.id}`)
       selectedCustomer.value = null
       items.value = []
     }
