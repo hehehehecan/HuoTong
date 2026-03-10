@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useProducts } from '../composables/useProducts'
-import { adjustStock } from '../composables/useInventory'
+import { adjustStock, getStockLogs, type StockLogWithOrderNo } from '../composables/useInventory'
 import type { Product } from '../composables/useProducts'
 
+const router = useRouter()
 const { products, loading, fetchAll, search } = useProducts()
 const refreshing = ref(false)
 const searchKeyword = ref('')
@@ -14,6 +16,11 @@ const adjustProduct = ref<Product | null>(null)
 const adjustNewStock = ref(0)
 const adjustReason = ref('')
 const adjustSubmitting = ref(false)
+
+const logsPopupVisible = ref(false)
+const logsProduct = ref<Product | null>(null)
+const logsList = ref<StockLogWithOrderNo[]>([])
+const logsLoading = ref(false)
 
 function openAdjust(product: Product) {
   adjustProduct.value = product
@@ -51,6 +58,59 @@ async function submitAdjust() {
     showToast({ type: 'fail', message: (e as Error)?.message || '调整失败，请重试' })
   } finally {
     adjustSubmitting.value = false
+  }
+}
+
+function openLogs(product: Product) {
+  logsProduct.value = product
+  logsList.value = []
+  logsPopupVisible.value = true
+}
+
+async function loadLogs() {
+  const product = logsProduct.value
+  if (!product) return
+  logsLoading.value = true
+  try {
+    logsList.value = await getStockLogs(product.id)
+  } catch (e) {
+    showToast({ type: 'fail', message: (e as Error)?.message || '加载变动记录失败' })
+    logsList.value = []
+  } finally {
+    logsLoading.value = false
+  }
+}
+
+function closeLogsPopup() {
+  logsPopupVisible.value = false
+  logsProduct.value = null
+  logsList.value = []
+}
+
+watch(logsPopupVisible, (visible) => {
+  if (visible && logsProduct.value) void loadLogs()
+})
+
+function formatLogTime(createdAt: string): string {
+  const d = new Date(createdAt)
+  return d.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+
+function formatChange(change: number): string {
+  return change >= 0 ? `+${change}` : `${change}`
+}
+
+function formatReason(reason: StockLogWithOrderNo['reason']): string {
+  const map = { sale_order: '出货', purchase_order: '进货', manual: '手动' }
+  return map[reason] ?? reason
+}
+
+function goToOrder(log: StockLogWithOrderNo) {
+  if (!log.reference_id) return
+  if (log.reason === 'sale_order') {
+    router.push({ name: 'sale-order-detail', params: { id: log.reference_id } })
+  } else if (log.reason === 'purchase_order') {
+    router.push({ name: 'purchase-order-detail', params: { id: log.reference_id } })
   }
 }
 
@@ -133,7 +193,10 @@ onUnmounted(() => {
             </template>
             <template #label>
               <span class="product-spec">{{ p.spec || '—' }}</span>
-              <span class="adjust-link">调整库存</span>
+              <span class="action-links">
+                <span class="adjust-link" @click.stop="openAdjust(p)">调整库存</span>
+                <span class="adjust-link" @click.stop="openLogs(p)">变动记录</span>
+              </span>
             </template>
             <template #value>
               <span :class="{ 'stock-zero': p.stock === 0 }" class="stock-value">{{ p.stock }}</span>
@@ -190,6 +253,48 @@ onUnmounted(() => {
         </div>
       </div>
     </van-popup>
+
+    <van-popup
+      v-model:show="logsPopupVisible"
+      position="bottom"
+      round
+      :style="{ maxHeight: '70vh', padding: '16px 16px 24px' }"
+      @closed="closeLogsPopup"
+    >
+      <div v-if="logsProduct" class="logs-popup">
+        <div class="logs-title">变动记录 · {{ logsProduct.name }}</div>
+        <van-loading v-if="logsLoading" class="logs-loading" />
+        <van-empty v-else-if="logsList.length === 0" description="暂无变动记录" />
+        <van-cell-group v-else inset class="logs-list">
+          <van-cell
+            v-for="log in logsList"
+            :key="log.id"
+            class="log-cell"
+          >
+            <template #title>
+              <span class="log-time">{{ formatLogTime(log.created_at) }}</span>
+              <span class="log-change" :class="{ 'change-positive': log.change > 0, 'change-negative': log.change < 0 }">
+                {{ formatChange(log.change) }}
+              </span>
+              <span class="log-balance">余额 {{ log.balance }}</span>
+            </template>
+            <template #label>
+              <span class="log-reason">{{ formatReason(log.reason) }}</span>
+              <span class="log-order-label">单据号：</span>
+              <span
+                v-if="log.reason !== 'manual' && log.reference_id"
+                class="log-order-link"
+                @click="goToOrder(log)"
+              >{{ log.orderNo ?? '—' }}</span>
+              <span v-else class="log-order-muted">—</span>
+            </template>
+          </van-cell>
+        </van-cell-group>
+        <div class="logs-close">
+          <van-button block type="default" @click="closeLogsPopup">关闭</van-button>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
@@ -243,11 +348,80 @@ onUnmounted(() => {
   vertical-align: middle;
 }
 
-.adjust-link {
-  display: inline-block;
+.action-links {
+  display: flex;
+  gap: 12px;
   margin-top: 4px;
+}
+
+.adjust-link {
   font-size: 13px;
   color: var(--van-primary-color);
+}
+
+.logs-popup {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.logs-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.logs-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.logs-list {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.log-cell .log-time {
+  font-size: 14px;
+  color: var(--van-text-color);
+}
+
+.log-cell .log-change {
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+.log-cell .change-positive {
+  color: #07c160;
+}
+
+.log-cell .change-negative {
+  color: #ee0a24;
+}
+
+.log-cell .log-balance {
+  margin-left: 8px;
+  font-size: 14px;
+  color: var(--van-gray-6);
+}
+
+.log-reason,
+.log-order-label {
+  font-size: 13px;
+  color: var(--van-gray-6);
+}
+
+.log-order-link {
+  color: var(--van-primary-color);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.log-order-muted {
+  color: var(--van-gray-6);
+}
+
+.logs-close {
+  margin-top: 12px;
 }
 
 .adjust-popup {

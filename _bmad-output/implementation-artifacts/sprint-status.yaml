@@ -85,7 +85,7 @@ development_status:
   epic-7: in-progress
   7-1-inventory-overview: done
   7-2-inventory-adjust: done
-  7-3-stock-logs: backlog
+  7-3-stock-logs: done
   7-4-realtime-sync: backlog
   7-5-backup-restore: backlog
   epic-7-retrospective: optional
