@@ -40,6 +40,15 @@ async function logout() {
         新建进货单
       </VanButton>
       <VanButton
+        type="default"
+        size="large"
+        block
+        class="shortcut-btn"
+        @click="goTo('/purchase-orders')"
+      >
+        进货单列表
+      </VanButton>
+      <VanButton
         type="primary"
         size="large"
         block

@@ -26,6 +26,17 @@ export interface PurchaseOrderItemWithProduct extends PurchaseOrderItem {
   products?: { name: string; spec: string } | null
 }
 
+/** 列表项：订单 + 供应商名（join suppliers） */
+export interface PurchaseOrderWithSupplier extends PurchaseOrder {
+  suppliers?: { name: string }[] | { name: string } | null
+}
+
+export interface PurchaseOrderListFilters {
+  supplier_id?: string
+  date_from?: string
+  date_to?: string
+}
+
 export interface PurchaseOrderItemInput {
   product_id: string
   quantity: number
@@ -157,6 +168,35 @@ export function usePurchaseOrders() {
     return data as PurchaseOrder
   }
 
+  /** 列表：按创建时间倒序，可选供应商/日期范围筛选 */
+  async function list(filters?: PurchaseOrderListFilters): Promise<PurchaseOrderWithSupplier[]> {
+    loading.value = true
+    try {
+      return await withRetry(async () => {
+        let q = supabase
+          .from('purchase_orders')
+          .select('id, order_no, supplier_id, total_amount, status, note, created_at, updated_at, suppliers(name)')
+          .order('created_at', { ascending: false })
+        if (filters?.supplier_id) {
+          q = q.eq('supplier_id', filters.supplier_id)
+        }
+        if (filters?.date_from) {
+          const start = new Date(filters.date_from + 'T00:00:00').toISOString()
+          q = q.gte('created_at', start)
+        }
+        if (filters?.date_to) {
+          const end = new Date(filters.date_to + 'T23:59:59.999').toISOString()
+          q = q.lte('created_at', end)
+        }
+        const { data, error } = await q
+        if (error) throw error
+        return (data ?? []) as unknown as PurchaseOrderWithSupplier[]
+      })
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function getItemsWithProduct(orderId: string): Promise<PurchaseOrderItemWithProduct[]> {
     const { data, error } = await supabase
       .from('purchase_order_items')
@@ -199,6 +239,7 @@ export function usePurchaseOrders() {
     loading,
     createDraft,
     getById,
+    list,
     getItemsWithProduct,
     confirm,
     parseConfirmError,
