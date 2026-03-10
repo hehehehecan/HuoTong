@@ -156,5 +156,22 @@ export function useProducts() {
     })
   }
 
-  return { products, loading, fetchAll, search, create, getById, update, remove }
+  async function createBatch(items: ProductInput[]): Promise<{ count: number }> {
+    if (items.length === 0) return { count: 0 }
+    const rows = items.map((input) => ({
+      name: input.name.trim(),
+      spec: input.spec?.trim() ?? '',
+      sell_price: input.sell_price ?? 0,
+      buy_price: input.buy_price ?? 0,
+      stock: input.stock ?? 0,
+    }))
+    const result = await withRetry(async () => {
+      const { data, error } = await supabase.from('products').insert(rows).select('id')
+      if (error) throw error
+      return { count: (data ?? []).length }
+    })
+    return result
+  }
+
+  return { products, loading, fetchAll, search, create, createBatch, getById, update, remove }
 }

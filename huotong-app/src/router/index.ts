@@ -33,6 +33,12 @@ const router = createRouter({
           meta: { title: '新增商品' },
         },
         {
+          path: 'products/batch',
+          name: 'product-batch-import',
+          component: () => import('../views/ProductBatchImportView.vue'),
+          meta: { title: '批量录入商品' },
+        },
+        {
           path: 'products/:id',
           name: 'product-edit',
           component: () => import('../views/ProductFormView.vue'),

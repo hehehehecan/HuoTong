@@ -9,6 +9,11 @@ const { products, loading, fetchAll, search } = useProducts()
 const refreshing = ref(false)
 const searchKeyword = ref('')
 
+const DESKTOP_BREAKPOINT = 768
+const isDesktop = ref(false)
+let mediaQueryList: MediaQueryList | null = null
+let onDesktopChange: ((event: MediaQueryListEvent) => void) | null = null
+
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 function runSearch(options?: { silent?: boolean }): Promise<void> {
   const silent = options?.silent ?? false
@@ -48,6 +53,10 @@ function goToEdit(id: string) {
   router.push(`/products/${id}`)
 }
 
+function goToBatchImport() {
+  router.push('/products/batch')
+}
+
 function formatPrice(n: number) {
   return Number(n).toFixed(2)
 }
@@ -56,6 +65,12 @@ const isSearchEmpty =
   computed(() => searchKeyword.value.trim() !== '' && products.value.length === 0)
 
 onMounted(() => {
+  mediaQueryList = window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`)
+  isDesktop.value = mediaQueryList.matches
+  onDesktopChange = (event: MediaQueryListEvent) => {
+    isDesktop.value = event.matches
+  }
+  mediaQueryList.addEventListener('change', onDesktopChange)
   void runSearch()
 })
 
@@ -64,6 +79,11 @@ onUnmounted(() => {
     clearTimeout(debounceTimer)
     debounceTimer = null
   }
+  if (mediaQueryList && onDesktopChange) {
+    mediaQueryList.removeEventListener('change', onDesktopChange)
+  }
+  mediaQueryList = null
+  onDesktopChange = null
 })
 </script>
 
@@ -99,6 +119,16 @@ onUnmounted(() => {
     </van-pull-refresh>
     <div class="fab-wrap">
       <van-button
+        v-if="isDesktop"
+        type="primary"
+        plain
+        round
+        class="fab fab-batch"
+        @click="goToBatchImport"
+      >
+        批量录入
+      </van-button>
+      <van-button
         type="primary"
         round
         class="fab"
@@ -128,11 +158,17 @@ onUnmounted(() => {
   right: 1rem;
   bottom: 4rem;
   z-index: 10;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 .fab {
   min-height: 44px;
   min-width: 44px;
   font-size: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.fab-batch {
+  min-width: auto;
 }
 </style>
