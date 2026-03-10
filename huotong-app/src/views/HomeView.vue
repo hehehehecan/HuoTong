@@ -57,6 +57,15 @@ async function logout() {
       >
         查应收
       </VanButton>
+      <VanButton
+        type="default"
+        size="large"
+        block
+        class="shortcut-btn"
+        @click="goTo('/payables')"
+      >
+        查应付
+      </VanButton>
     </div>
     <div class="logout-wrap">
       <VanButton type="default" block @click="logout">退出登录</VanButton>

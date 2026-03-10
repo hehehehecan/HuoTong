@@ -77,7 +77,7 @@ development_status:
 
   epic-6: in-progress
   6-1-receivables-list: done
-  6-2-payables-list: backlog
+  6-2-payables-list: done
   6-3-payment-status: backlog
   6-4-receivable-payable-detail: backlog
   epic-6-retrospective: optional
