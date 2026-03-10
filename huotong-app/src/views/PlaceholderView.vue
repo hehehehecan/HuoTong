@@ -1,15 +1,34 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { showLoadingToast, showSuccessToast, showFailToast, closeToast } from 'vant'
+import { exportDataAsJson } from '../composables/useExportData'
 
 const route = useRoute()
 const router = useRouter()
 const title = computed(() => (route.meta.title as string) ?? '')
 const message = computed(() => (route.meta.message as string) ?? '功能开发中，敬请期待')
 const isMorePage = computed(() => route.path === '/more')
+const exporting = ref(false)
 
 function goToStock() {
   router.push('/stock')
+}
+
+async function handleExportData() {
+  if (exporting.value) return
+  exporting.value = true
+  showLoadingToast({ message: '正在导出…', duration: 0 })
+  try {
+    await exportDataAsJson()
+    closeToast()
+    showSuccessToast('导出成功')
+  } catch {
+    closeToast()
+    showFailToast('导出失败，请重试')
+  } finally {
+    exporting.value = false
+  }
 }
 </script>
 
@@ -19,6 +38,7 @@ function goToStock() {
     <p class="placeholder-message">{{ message }}</p>
     <div v-if="isMorePage" class="shortcuts">
       <van-cell title="库存总览" is-link @click="goToStock" />
+      <van-cell title="导出数据" is-link :disabled="exporting" @click="handleExportData" />
     </div>
   </div>
 </template>

@@ -20,4 +20,5 @@ env/
 # Build / Output
 dist/
 build/
+_backups/
 *.log
