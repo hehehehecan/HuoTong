@@ -14,6 +14,7 @@ import {
   PullRefresh,
   Search,
   Dialog,
+  Popup,
 } from 'vant'
 import 'vant/lib/index.css'
 import router from './router'
@@ -37,6 +38,7 @@ app.use(CellGroup)
 app.use(PullRefresh)
 app.use(Search)
 app.use(Dialog)
+app.use(Popup)
 
 async function bootstrap() {
   const userStore = useUserStore()

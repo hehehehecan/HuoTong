@@ -95,8 +95,8 @@ const router = createRouter({
         {
           path: 'sale-orders/new',
           name: 'sale-order-new',
-          component: () => import('../views/PlaceholderView.vue'),
-          meta: { title: '新建出货单', message: '功能开发中，敬请期待' },
+          component: () => import('../views/SaleOrderCreateView.vue'),
+          meta: { title: '新建出货单' },
         },
         {
           path: 'purchase-orders/new',
