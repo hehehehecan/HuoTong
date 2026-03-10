@@ -52,6 +52,12 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 1): Promise<T> {
   }
 }
 
+function toMoney(value: number): number {
+  const normalized = Number(value)
+  if (!Number.isFinite(normalized)) return 0
+  return Math.round(normalized * 100) / 100
+}
+
 export function usePayables() {
   const loading = ref(false)
 
@@ -135,5 +141,46 @@ export function usePayables() {
     }
   }
 
-  return { loading, listGroupedBySupplier, listBySupplier }
+  /**
+   * 记录应付付款：更新 paid_amount 与 status（partial/paid）
+   * @throws 当付款金额超过剩余未付时抛出错误信息，供上层 Toast 展示
+   */
+  async function recordPayment(id: string, paymentAmount: number): Promise<void> {
+    const amount = toMoney(paymentAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new Error('请输入有效的付款金额')
+    }
+    return await withRetry(async () => {
+      const { data: row, error: fetchError } = await supabase
+        .from('payables')
+        .select('amount, paid_amount')
+        .eq('id', id)
+        .single()
+
+      if (fetchError || !row) throw fetchError || new Error('记录不存在')
+      const total = toMoney(Number(row.amount))
+      const paid = toMoney(Number(row.paid_amount))
+      const remaining = toMoney(total - paid)
+      if (remaining <= 0) {
+        throw new Error('该记录已结清')
+      }
+      if (amount > remaining) {
+        throw new Error('付款金额不能超过未付金额')
+      }
+      const newPaid = toMoney(paid + amount)
+      const newStatus: 'paid' | 'partial' = newPaid >= total ? 'paid' : 'partial'
+      const { error: updateError } = await supabase
+        .from('payables')
+        .update({
+          paid_amount: newPaid,
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+
+      if (updateError) throw updateError
+    })
+  }
+
+  return { loading, listGroupedBySupplier, listBySupplier, recordPayment }
 }

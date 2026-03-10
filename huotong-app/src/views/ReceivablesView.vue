@@ -7,12 +7,23 @@ import {
   type ReceivableWithOrder,
 } from '../composables/useReceivables'
 
-const { loading, listGroupedByCustomer, listByCustomer } = useReceivables()
+const { loading, listGroupedByCustomer, listByCustomer, recordPayment } = useReceivables()
 
 const summaries = ref<CustomerReceivableSummary[]>([])
 const activeName = ref<string>('')
 const customerDetails = ref<Map<string, ReceivableWithOrder[]>>(new Map())
 const refreshing = ref(false)
+
+const paymentPopupVisible = ref(false)
+const paymentTarget = ref<ReceivableWithOrder | null>(null)
+const paymentAmount = ref('')
+const paymentSubmitting = ref(false)
+
+function toMoney(value: number): number {
+  const normalized = Number(value)
+  if (!Number.isFinite(normalized)) return 0
+  return Math.round(normalized * 100) / 100
+}
 
 function formatMoney(value: number): string {
   return value.toFixed(2)
@@ -91,6 +102,51 @@ async function onCollapseChange(name: string | number) {
   }
 }
 
+function openPaymentPopup(item: ReceivableWithOrder) {
+  paymentTarget.value = item
+  paymentAmount.value = ''
+  paymentPopupVisible.value = true
+}
+
+function closePaymentPopup() {
+  paymentPopupVisible.value = false
+  paymentTarget.value = null
+  paymentAmount.value = ''
+}
+
+function getRemaining(item: ReceivableWithOrder): number {
+  return Math.max(0, toMoney(Number(item.amount) - Number(item.paid_amount)))
+}
+
+async function confirmPayment() {
+  const item = paymentTarget.value
+  if (!item) return
+  const remaining = getRemaining(item)
+  const amount = toMoney(Number.parseFloat(paymentAmount.value))
+  if (!Number.isFinite(amount) || amount <= 0) {
+    showToast('请输入有效的付款金额')
+    return
+  }
+  if (amount > remaining) {
+    showToast('付款金额不能超过未付金额')
+    return
+  }
+  paymentSubmitting.value = true
+  try {
+    await recordPayment(item.id, amount)
+    closePaymentPopup()
+    showToast('已更新')
+    const customerId = item.customer_id
+    const details = await listByCustomer(customerId)
+    customerDetails.value.set(customerId, details)
+    summaries.value = await listGroupedByCustomer()
+  } catch (e) {
+    showToast((e as Error)?.message ?? '操作失败，请重试')
+  } finally {
+    paymentSubmitting.value = false
+  }
+}
+
 onMounted(() => {
   loadData()
 })
@@ -147,12 +203,54 @@ onMounted(() => {
                 <div class="detail-row">
                   <span class="date">{{ formatDate(item.created_at) }}</span>
                 </div>
+                <div v-if="item.status === 'unpaid' || item.status === 'partial'" class="detail-row detail-actions">
+                  <van-button size="small" type="primary" @click="openPaymentPopup(item)">标记付款</van-button>
+                </div>
               </div>
             </template>
           </div>
         </van-collapse-item>
       </van-collapse>
     </div>
+
+    <van-popup
+      v-model:show="paymentPopupVisible"
+      position="bottom"
+      round
+      :style="{ padding: '16px 16px 24px' }"
+      @closed="closePaymentPopup"
+    >
+      <div v-if="paymentTarget" class="payment-popup">
+        <div class="payment-title">标记付款</div>
+        <div class="payment-info">
+          <div class="payment-row">
+            <span class="payment-label">应收总额</span>
+            <span class="payment-value">¥{{ formatMoney(Number(paymentTarget.amount)) }}</span>
+          </div>
+          <div class="payment-row">
+            <span class="payment-label">已付金额</span>
+            <span class="payment-value">¥{{ formatMoney(Number(paymentTarget.paid_amount)) }}</span>
+          </div>
+          <div class="payment-row">
+            <span class="payment-label">剩余未付</span>
+            <span class="payment-value highlight">¥{{ formatMoney(getRemaining(paymentTarget)) }}</span>
+          </div>
+        </div>
+        <van-field
+          v-model="paymentAmount"
+          type="digit"
+          label="本次付款金额"
+          placeholder="请输入金额"
+          :disabled="paymentSubmitting"
+        />
+        <div class="payment-buttons">
+          <van-button block type="default" @click="closePaymentPopup">取消</van-button>
+          <van-button block type="primary" :loading="paymentSubmitting" class="payment-confirm" @click="confirmPayment">
+            确认
+          </van-button>
+        </div>
+      </div>
+    </van-popup>
   </van-pull-refresh>
 </template>
 
@@ -204,6 +302,69 @@ onMounted(() => {
 
 .detail-item:last-child {
   margin-bottom: 0;
+}
+
+.detail-actions {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #ebedf0;
+}
+
+.payment-popup {
+  min-width: 280px;
+}
+
+.payment-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #323233;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.payment-info {
+  background: #f7f8fa;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.payment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.payment-row:last-child {
+  margin-bottom: 0;
+}
+
+.payment-label {
+  font-size: 14px;
+  color: #969799;
+}
+
+.payment-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #323233;
+}
+
+.payment-value.highlight {
+  color: #ee0a24;
+  font-weight: 600;
+}
+
+.payment-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.payment-confirm {
+  margin-top: 4px;
 }
 
 .detail-row {
