@@ -38,7 +38,7 @@ const navTitle = computed(() => {
     <van-tabbar route>
       <van-tabbar-item to="/" name="home" icon="home-o">首页</van-tabbar-item>
       <van-tabbar-item to="/products" name="products" icon="shopping-cart-o">商品</van-tabbar-item>
-      <van-tabbar-item to="/orders" name="orders" icon="records-o">单据</van-tabbar-item>
+      <van-tabbar-item to="/sale-orders" name="orders" icon="records-o">单据</van-tabbar-item>
       <van-tabbar-item to="/more" name="more" icon="setting-o">更多</van-tabbar-item>
     </van-tabbar>
   </div>

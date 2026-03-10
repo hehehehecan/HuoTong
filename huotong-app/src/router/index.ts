@@ -83,14 +83,19 @@ const router = createRouter({
         {
           path: 'orders',
           name: 'orders',
-          component: () => import('../views/PlaceholderView.vue'),
-          meta: { title: '单据', message: '功能开发中，敬请期待' },
+          redirect: '/sale-orders',
         },
         {
           path: 'more',
           name: 'more',
           component: () => import('../views/PlaceholderView.vue'),
           meta: { title: '更多', message: '功能开发中，敬请期待' },
+        },
+        {
+          path: 'sale-orders',
+          name: 'sale-orders',
+          component: () => import('../views/SaleOrderListView.vue'),
+          meta: { title: '出货单' },
         },
         {
           path: 'sale-orders/new',
