@@ -1,5 +1,6 @@
-import { ref } from 'vue'
+import { ref, onScopeDispose } from 'vue'
 import { supabase } from '../lib/supabase'
+import { subscribeTable } from '../lib/realtime'
 import type { PostgrestError } from '@supabase/supabase-js'
 
 export interface Receivable {
@@ -60,6 +61,20 @@ function toMoney(value: number): number {
 
 export function useReceivables() {
   const loading = ref(false)
+  const invalidateFns = new Set<() => void>()
+  onScopeDispose(
+    subscribeTable('receivables', () => {
+      invalidateFns.forEach((fn) => {
+        try {
+          fn()
+        } catch (_) {}
+      })
+    })
+  )
+  function onInvalidate(fn: () => void): () => void {
+    invalidateFns.add(fn)
+    return () => invalidateFns.delete(fn)
+  }
 
   /**
    * 获取所有未付/部分付的应收记录，按客户分组汇总
@@ -182,5 +197,5 @@ export function useReceivables() {
     })
   }
 
-  return { loading, listGroupedByCustomer, listByCustomer, recordPayment }
+  return { loading, listGroupedByCustomer, listByCustomer, recordPayment, onInvalidate }
 }

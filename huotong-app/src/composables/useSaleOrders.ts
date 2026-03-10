@@ -1,5 +1,6 @@
-import { ref } from 'vue'
+import { ref, onScopeDispose } from 'vue'
 import { supabase } from '../lib/supabase'
+import { subscribeTable } from '../lib/realtime'
 import type { PostgrestError } from '@supabase/supabase-js'
 
 export interface SaleOrder {
@@ -106,6 +107,20 @@ function generateOrderNo(): string {
 
 export function useSaleOrders() {
   const loading = ref(false)
+  const invalidateFns = new Set<() => void>()
+  onScopeDispose(
+    subscribeTable('sale_orders', () => {
+      invalidateFns.forEach((fn) => {
+        try {
+          fn()
+        } catch (_) {}
+      })
+    })
+  )
+  function onInvalidate(fn: () => void): () => void {
+    invalidateFns.add(fn)
+    return () => invalidateFns.delete(fn)
+  }
 
   /** 列表：按创建时间倒序，可选客户/日期范围筛选 */
   async function list(filters?: SaleOrderListFilters): Promise<SaleOrderWithCustomer[]> {
@@ -299,5 +314,5 @@ export function useSaleOrders() {
     }
   }
 
-  return { loading, list, createDraft, getById, getItemsByOrderId, getItemsWithProduct, confirm, parseConfirmError, recognizeFromImage }
+  return { loading, list, createDraft, getById, getItemsByOrderId, getItemsWithProduct, confirm, parseConfirmError, recognizeFromImage, onInvalidate }
 }

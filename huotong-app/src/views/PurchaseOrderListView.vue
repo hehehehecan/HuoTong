@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onScopeDispose, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { usePurchaseOrders } from '../composables/usePurchaseOrders'
@@ -8,7 +8,7 @@ import type { PurchaseOrderWithSupplier } from '../composables/usePurchaseOrders
 import type { PurchaseOrderListFilters } from '../composables/usePurchaseOrders'
 
 const router = useRouter()
-const { list, loading } = usePurchaseOrders()
+const { list, loading, onInvalidate } = usePurchaseOrders()
 const { suppliers, fetchAll } = useSuppliers()
 
 const orders = ref<PurchaseOrderWithSupplier[]>([])
@@ -93,6 +93,8 @@ async function openFilterPopup() {
     }
   }
 }
+
+onScopeDispose(onInvalidate(loadList))
 
 function goToDetail(id: string) {
   router.push(`/purchase-orders/${id}`)

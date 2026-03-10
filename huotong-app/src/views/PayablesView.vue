@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onScopeDispose } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
@@ -9,7 +9,7 @@ import {
 } from '../composables/usePayables'
 
 const router = useRouter()
-const { loading, listGroupedBySupplier, listBySupplier, recordPayment } = usePayables()
+const { loading, listGroupedBySupplier, listBySupplier, recordPayment, onInvalidate } = usePayables()
 
 const summaries = ref<SupplierPayableSummary[]>([])
 const activeName = ref<string>('')
@@ -89,6 +89,8 @@ async function onRefresh() {
   await loadData()
   refreshing.value = false
 }
+
+onScopeDispose(onInvalidate(loadData))
 
 async function onCollapseChange(name: string | number) {
   const supplierId = String(name || '').trim()

@@ -1,5 +1,6 @@
-import { ref } from 'vue'
+import { ref, onScopeDispose } from 'vue'
 import { supabase } from '../lib/supabase'
+import { subscribeTable } from '../lib/realtime'
 import type { PostgrestError } from '@supabase/supabase-js'
 
 export interface PurchaseOrder {
@@ -105,6 +106,20 @@ function generateOrderNo(): string {
 
 export function usePurchaseOrders() {
   const loading = ref(false)
+  const invalidateFns = new Set<() => void>()
+  onScopeDispose(
+    subscribeTable('purchase_orders', () => {
+      invalidateFns.forEach((fn) => {
+        try {
+          fn()
+        } catch (_) {}
+      })
+    })
+  )
+  function onInvalidate(fn: () => void): () => void {
+    invalidateFns.add(fn)
+    return () => invalidateFns.delete(fn)
+  }
 
   async function createDraft(input: PurchaseOrderDraftInput): Promise<PurchaseOrder | null> {
     if (!input.supplier_id || !input.items.length) {
@@ -280,5 +295,6 @@ export function usePurchaseOrders() {
     confirm,
     parseConfirmError,
     recognizeFromImage,
+    onInvalidate,
   }
 }

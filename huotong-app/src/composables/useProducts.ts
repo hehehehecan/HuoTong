@@ -1,5 +1,6 @@
-import { ref } from 'vue'
+import { ref, onScopeDispose } from 'vue'
 import { supabase } from '../lib/supabase'
+import { subscribeTable } from '../lib/realtime'
 import type { PostgrestError } from '@supabase/supabase-js'
 
 export interface Product {
@@ -54,9 +55,15 @@ export function useProducts() {
   const products = ref<Product[]>([])
   const loading = ref(false)
   let latestQueryId = 0
+  let currentKeyword = ''
+
+  function refreshByCurrentQuery(): Promise<Product[]> {
+    return currentKeyword ? search(currentKeyword) : fetchAll()
+  }
 
   async function fetchAll() {
     const queryId = ++latestQueryId
+    currentKeyword = ''
     loading.value = true
     try {
       const { data, error } = await supabase
@@ -93,6 +100,7 @@ export function useProducts() {
   async function search(keyword: string): Promise<Product[]> {
     const k = keyword.trim()
     if (!k) return fetchAll()
+    currentKeyword = k
     const queryId = ++latestQueryId
     loading.value = true
     try {
@@ -172,6 +180,8 @@ export function useProducts() {
     })
     return result
   }
+
+  onScopeDispose(subscribeTable('products', () => { void refreshByCurrentQuery() }))
 
   return { products, loading, fetchAll, search, create, createBatch, getById, update, remove }
 }

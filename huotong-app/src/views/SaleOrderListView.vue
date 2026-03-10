@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onScopeDispose, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useSaleOrders } from '../composables/useSaleOrders'
@@ -8,7 +8,7 @@ import type { SaleOrderWithCustomer } from '../composables/useSaleOrders'
 import type { SaleOrderListFilters } from '../composables/useSaleOrders'
 
 const router = useRouter()
-const { list, loading } = useSaleOrders()
+const { list, loading, onInvalidate } = useSaleOrders()
 const { customers, fetchAll } = useCustomers()
 
 const orders = ref<SaleOrderWithCustomer[]>([])
@@ -93,6 +93,8 @@ async function openFilterPopup() {
     }
   }
 }
+
+onScopeDispose(onInvalidate(loadList))
 
 function goToDetail(id: string) {
   router.push(`/sale-orders/${id}`)
