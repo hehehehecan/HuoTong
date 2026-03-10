@@ -48,6 +48,14 @@ export interface SaleOrderListFilters {
   date_to?: string
 }
 
+/** 识图结果：与 Edge Function recognize-receipt 返回格式一致 */
+export interface RecognizeReceiptResult {
+  customer_name: string | null
+  supplier_name: string | null
+  items: { name: string; quantity: number; unit_price: number }[]
+  total: number | null
+}
+
 function toMoney(value: number): number {
   const normalized = Number(value)
   if (!Number.isFinite(normalized)) return 0
@@ -260,5 +268,36 @@ export function useSaleOrders() {
     return null
   }
 
-  return { loading, list, createDraft, getById, getItemsByOrderId, getItemsWithProduct, confirm, parseConfirmError }
+  /** 拍照识别：调用 Edge Function recognize-receipt，返回解析后的 JSON；失败返回 null 并可由调用方 Toast */
+  async function recognizeFromImage(imageBase64: string): Promise<RecognizeReceiptResult | null> {
+    try {
+      const { data, error } = await withRetry(() =>
+        supabase.functions.invoke('recognize-receipt', {
+          body: { image_base64: imageBase64 },
+        })
+      )
+      if (error) throw error
+      const raw = data as string | RecognizeReceiptResult | undefined
+      if (raw === undefined || raw === null) return null
+      const parsed =
+        typeof raw === 'string'
+          ? (JSON.parse(raw) as RecognizeReceiptResult)
+          : raw
+      if (!Array.isArray(parsed.items)) parsed.items = []
+      return {
+        customer_name: parsed.customer_name ?? null,
+        supplier_name: parsed.supplier_name ?? null,
+        items: parsed.items.map((i) => ({
+          name: typeof i?.name === 'string' ? i.name : '',
+          quantity: Number(i?.quantity) || 0,
+          unit_price: Number(i?.unit_price) || 0,
+        })),
+        total: typeof parsed.total === 'number' ? parsed.total : null,
+      }
+    } catch {
+      return null
+    }
+  }
+
+  return { loading, list, createDraft, getById, getItemsByOrderId, getItemsWithProduct, confirm, parseConfirmError, recognizeFromImage }
 }

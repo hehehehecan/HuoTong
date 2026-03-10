@@ -65,7 +65,7 @@ development_status:
   4-1-sale-order-create: done
   4-2-sale-order-confirm: done
   4-3-sale-order-list-detail: done
-  4-4-photo-recognize-sale: backlog
+  4-4-photo-recognize-sale: done
   epic-4-retrospective: optional
 
   epic-5: backlog
