@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import MainLayout from '../components/MainLayout.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -12,8 +13,32 @@ const router = createRouter({
     },
     {
       path: '/',
-      name: 'home',
-      component: () => import('../views/HomeView.vue'),
+      component: MainLayout,
+      children: [
+        {
+          path: '',
+          name: 'home',
+          component: () => import('../views/HomeView.vue'),
+        },
+        {
+          path: 'products',
+          name: 'products',
+          component: () => import('../views/PlaceholderView.vue'),
+          meta: { title: '商品', message: '功能开发中，敬请期待' },
+        },
+        {
+          path: 'orders',
+          name: 'orders',
+          component: () => import('../views/PlaceholderView.vue'),
+          meta: { title: '单据', message: '功能开发中，敬请期待' },
+        },
+        {
+          path: 'more',
+          name: 'more',
+          component: () => import('../views/PlaceholderView.vue'),
+          meta: { title: '更多', message: '功能开发中，敬请期待' },
+        },
+      ],
     },
   ],
 })
