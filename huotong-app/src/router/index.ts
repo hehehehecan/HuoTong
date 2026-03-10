@@ -110,10 +110,22 @@ const router = createRouter({
           meta: { title: '出货单详情' },
         },
         {
+          path: 'purchase-orders',
+          name: 'purchase-orders',
+          component: () => import('../views/PlaceholderView.vue'),
+          meta: { title: '进货单', message: '列表功能开发中' },
+        },
+        {
           path: 'purchase-orders/new',
           name: 'purchase-order-new',
-          component: () => import('../views/PlaceholderView.vue'),
-          meta: { title: '新建进货单', message: '功能开发中，敬请期待' },
+          component: () => import('../views/PurchaseOrderCreateView.vue'),
+          meta: { title: '新建进货单' },
+        },
+        {
+          path: 'purchase-orders/:id',
+          name: 'purchase-order-detail',
+          component: () => import('../views/PurchaseOrderDetailView.vue'),
+          meta: { title: '进货单详情' },
         },
         {
           path: 'receivables',
