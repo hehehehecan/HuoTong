@@ -230,3 +230,34 @@
 4. 填写调整原因，将「调整后库存」设为负数并点击「确认」，应 Toast 提示请输入有效库存（≥0），且不发起请求。
 5. 填写调整原因与有效调整后库存（如 10），点击「确认」，应 Toast「调整成功」、弹窗关闭、列表刷新且该商品库存显示为新数量；在 Supabase 表 `products` 中该商品 `stock` 为新值，表 `stock_logs` 中新增一条记录：`reason = 'manual'`，`change` = 新数量 - 旧数量，`balance` = 新数量。
 
+---
+
+## 7-3-stock-logs（循环完成日：2026-03-10）
+
+**已验证**：否
+
+1. 未登录时访问 `/stock`，应被重定向到登录页。
+2. 登录后进入库存总览 `/stock`，每行商品应显示「调整库存」与「变动记录」两个入口；点击「变动记录」（不触发整行打开调整弹窗），应弹出「变动记录」弹窗，标题含该商品名称。
+3. 弹窗内应显示该商品的库存变动列表（来自 `stock_logs`），每条包含：变动时间（本地格式）、变动数量（正数 +N、负数 -N）、变动后余额、原因（出货/进货/手动）、单据号（有则显示，无则「—」）；若无记录则显示「暂无变动记录」。
+4. 当某条变动原因为「出货」或「进货」且有关联单据时，单据号应为可点击链接；点击后应跳转到对应出货单详情页（`/sale-orders/:id`）或进货单详情页（`/purchase-orders/:id`）。
+5. 原因为「手动」的变动记录，单据号显示「—」，不可点击跳转。
+
+---
+
+## 7-4-realtime-sync（循环完成日：2026-03-10）
+
+**已验证**：否
+
+1. **多端库存/列表自动刷新**：在浏览器 A 登录并打开库存总览 `/stock`（或应收 `/receivables`、出货单列表 `/sale-orders` 等）；在浏览器 B（或隐身窗口）用同账号或另一账号登录，执行会改数据的操作（如确认一笔出货单、在库存总览调整某商品库存、或标记一笔应收付款）。浏览器 A 中对应列表应在数秒内自动更新，无需手动下拉刷新。
+2. **Realtime 订阅生效**：确认 products、sale_orders、purchase_orders、receivables、payables 任一表在 Supabase 中发生变更时，当前打开的相关页面（库存总览、出货单列表、进货单列表、应收、应付）会收到变更并刷新展示。
+3. **可选：断线重连**：在 DevTools 中限流或短暂断网后恢复，确认 Realtime 自动重连且恢复后数据可再次拉取正确（列表可正常刷新）。
+
+---
+
+## 7-5-backup-restore（循环完成日：2026-03-10）
+
+**已验证**：否
+
+1. **应用内导出**：登录后进入「更多」页（底部 Tab「更多」），点击「导出数据」，应出现「正在导出…」Toast，随后触发浏览器下载 JSON 文件（文件名形如 `huotong-export-YYYYMMDDHHmmss.json`）；打开文件应包含 `exportedAt`、`products`、`customers`、`suppliers`、`sale_orders`、`sale_order_items`、`purchase_orders`、`purchase_order_items`、`receivables`、`payables`、`stock_logs` 等 key，且为当前用户可见的业务数据。
+2. **开发者备份**（可选）：在项目根配置 `DATABASE_URL` 或先执行 `supabase link`，运行 `./scripts/backup-db.sh`，应在 `_backups/` 下生成 `dump_YYYYMMDD_HHmm.sql`；打开 `docs/backup-restore.md` 可按文档执行恢复（建议仅在测试环境验证）。
+
