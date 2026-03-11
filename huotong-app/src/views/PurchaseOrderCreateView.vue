@@ -535,7 +535,7 @@ onMounted(() => {
 
 <style scoped>
 .purchase-order-create {
-  padding-bottom: 6rem;
+  padding-bottom: calc(12rem + var(--app-tabbar-height, 50px) + env(safe-area-inset-bottom));
   font-size: 16px;
 }
 .section-title {
@@ -576,29 +576,36 @@ onMounted(() => {
 }
 .footer-actions {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  right: auto;
+  bottom: calc(var(--app-tabbar-height, 50px) + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(100%, var(--app-content-max-width, 1200px));
   padding: 12px 16px;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
   background: var(--van-background);
   border-top: 1px solid var(--van-border-color);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+  z-index: 11;
 }
 .footer-actions .total {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 12px;
+  text-align: center;
 }
 .footer-actions .buttons {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  flex-wrap: wrap;
 }
 .add-btn,
 .save-btn {
-  flex: 1;
   min-width: 0;
   min-height: 44px;
+}
+.save-btn {
+  grid-column: 1 / -1;
 }
 .popup-header {
   padding: 16px;
@@ -630,5 +637,29 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 100%;
+}
+
+@media (min-width: 640px) {
+  .purchase-order-create {
+    padding-bottom: calc(8.5rem + var(--app-tabbar-height, 50px) + env(safe-area-inset-bottom));
+  }
+
+  .footer-actions .total {
+    text-align: left;
+  }
+
+  .footer-actions .buttons {
+    display: flex;
+    flex-wrap: nowrap;
+  }
+
+  .add-btn,
+  .save-btn {
+    flex: 1;
+  }
+
+  .save-btn {
+    grid-column: auto;
+  }
 }
 </style>
