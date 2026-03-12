@@ -1,7 +1,7 @@
 ---
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments:
-  - 'product-brief-HuoTong（货通）-2026-03-09.md'
+  - 'product-brief-MyApp-2026-03-09.md'
   - 'prd.md'
 workflowType: 'architecture'
 project_name: 'HuoTong（货通）'
@@ -17,13 +17,14 @@ workflow_completed: true
 ### Requirements Overview
 
 **Functional Requirements:**
-43 条功能需求，覆盖 8 个能力域：商品管理、客户管理、供应商管理、出货单管理、进货单管理、应收应付管理、库存管理、智能识图录入。核心架构特征是以"单据"为数据纽带，出货/进货操作需要触发跨模块的级联更新（库存增减 + 账款生成）。新增智能识图能力，通过大模型 Vision API 识别纸质单据并自动填充表单。
+当前以已落地的 43 条业务需求作为 Web 基线，并在此基础上新增 Android 客户端增量需求（安装、会话恢复、返回键、网络提示、升级分发与首版降级策略）。核心架构特征仍然是以"单据"为数据纽带，出货/进货操作需要触发跨模块的级联更新（库存增减 + 账款生成）。智能识图链路保留，但不要求在 Android 首版默认启用。
 
 **Non-Functional Requirements:**
 - 性能：页面加载 < 2s，搜索响应 < 500ms
 - 安全：HTTPS + 简单认证
 - 可用性：大字体、大按钮、3步内完成操作
 - 可靠性：数据不丢失、可备份恢复
+- 交付：支持 APK 安装、覆盖升级、家庭内部分发与真机回归
 
 **Scale & Complexity:**
 - 复杂度：低
@@ -35,9 +36,10 @@ workflow_completed: true
 
 - 单人开发者，业余时间开发
 - 用户数字化水平：微信级别
-- 必须支持手机浏览器（含微信内置浏览器）和 PC 浏览器
+- 首轮 Web 基线已完成，本轮主交付形态改为 Android 客户端
 - 无预算限制但倾向免费/低成本方案
 - 需要网络连接（MVP 不要求离线）
+- 需要支持家庭内部 APK 分发与覆盖安装升级
 
 ### Cross-Cutting Concerns
 
@@ -49,7 +51,7 @@ workflow_completed: true
 
 ## Starter Template & Technology Stack
 
-### 选定方案：Vue 3 + Vite + Supabase
+### 选定方案：Vue 3 + Vite + Supabase + Capacitor(Android)
 
 **初始化命令：**
 
@@ -68,7 +70,8 @@ npm create vite@latest huotong -- --template vue-ts
 | **后端/数据库** | Supabase (PostgreSQL) | - | 免运维、自带认证/实时同步/API，免费额度完全够用 |
 | **状态管理** | Pinia | 2.x | Vue 3 官方推荐，轻量直觉 |
 | **路由** | Vue Router | 4.x | Vue 3 官方路由 |
-| **部署** | Vercel | - | 免费、自动部署、HTTPS 自带、全球 CDN |
+| **Android 容器** | Capacitor | latest | 最大化复用现有 Vue/Vite 代码，优先快速交付 Android 客户端 |
+| **分发** | APK 手工分发 | - | 适合家庭内测和非应用商店首发 |
 | **CSS 方案** | Vant 主题变量 + CSS Variables | - | 使用 Vant 内置主题系统定制样式 |
 | **智能识图** | GPT-4o Vision API | - | 通过 Supabase Edge Functions 调用，识别纸质单据 |
 
@@ -199,7 +202,7 @@ stock_logs (库存变动记录)
 - Row Level Security (RLS) 确保数据隔离（虽然本项目所有人共享数据，但 RLS 防止未授权访问）
 
 **安全措施：**
-- HTTPS（Vercel + Supabase 均自带）
+- HTTPS（Android 客户端与 Supabase 通信）
 - Supabase API Key 不暴露在客户端（使用 anon key + RLS）
 - 数据库不直接暴露公网
 
@@ -356,7 +359,7 @@ src/
 **状态管理策略：**
 - Pinia 仅管理全局状态（用户认证状态）
 - 业务数据通过 Composables 直接从 Supabase 获取，不做全局缓存
-- 利用 Supabase Realtime 订阅保持数据新鲜
+- 利用 Supabase Realtime 订阅保持数据新鲜，但 Android 首版允许默认关闭
 
 **路由结构：**
 
@@ -380,24 +383,41 @@ src/
 | `/payables` | 应付账款 | 按供应商汇总、标记付款 |
 | `/stock` | 库存总览 | 当前库存、变动记录 |
 
+### Android 平台抽象层
+
+在保留现有业务层的前提下，新增一层平台适配，避免页面直接依赖浏览器特有能力：
+
+- **CameraService**：封装拍照/相册选图；Android 首版可先不启用识图入口
+- **FileExportService**：封装导出到文件/系统分享；首版可先下线原有浏览器下载能力
+- **BackButtonService**：统一处理页面回退、弹窗关闭和首页退出确认
+- **AppLifecycleService**：处理前后台切换、冷启动恢复、resume 时的数据刷新
+- **NetworkStatusService**：识别离线/弱网，提供统一提示与重试入口
+- **SessionStorageStrategy**：首版可沿用 Web 存储，后续演进到原生存储适配
+
+共享边界定义如下：
+
+- **共享层**：Pinia、Vue 页面、Composables、Supabase client、领域模型、RLS / RPC / Edge Function 契约
+- **平台层**：Android 原生权限、相机、文件系统、返回键、应用生命周期、安装升级体验
+
 ### Infrastructure & Deployment
 
-**部署方案：Vercel（前端）+ Supabase（后端）**
+**部署方案：Android APK（前端容器）+ Supabase（后端）**
 
 ```
-用户手机/电脑浏览器
+用户手机 Android App
         │
         ▼
-   Vercel CDN (前端静态资源)
+   Capacitor WebView (本地前端资源)
         │
         ▼
    Supabase (API + 数据库 + 认证 + 实时)
 ```
 
-- **前端部署**：Vercel 自动从 Git 仓库部署，推送即上线
+- **前端交付**：通过 Capacitor 构建 Android 工程，签名后输出 APK
+- **分发方式**：家庭内部下载页或手工分发 APK，支持覆盖安装升级
 - **后端**：Supabase 托管，免运维
-- **域名**：使用 Vercel 提供的免费域名（xxx.vercel.app），或绑定自定义域名
-- **HTTPS**：Vercel 和 Supabase 均自带
+- **域名**：不再把公网 Web 域名作为正式交付前提；仅在需要提供下载页时再考虑
+- **HTTPS**：Android 与 Supabase 通信继续使用 HTTPS
 
 **备份策略：**
 - Supabase 免费版不含自动备份
@@ -410,6 +430,13 @@ src/
 |------|------|-------------|
 | development | 本地开发 | 本地 Supabase CLI 或单独的免费项目 |
 | production | 线上使用 | 主 Supabase 项目 |
+
+**Android 发布管理：**
+
+- **包名 / applicationId**：一旦确定，后续不轻易修改
+- **签名证书 / keystore**：必须安全备份，否则无法平滑升级
+- **版本管理**：同时维护 `versionName` 与 `versionCode`
+- **验收要求**：上线前必须完成真机安装、覆盖升级、前后台切换和弱网回归
 
 ---
 
@@ -468,8 +495,8 @@ $$ LANGUAGE plpgsql;
 ### 响应式设计策略
 
 - 默认移动端布局（Vant 组件天然移动优先）
-- PC 端通过 CSS Media Query 适配更宽的布局
-- 批量录入页面在 PC 端展示为表格编辑器，在手机端降级为逐条录入
+- Android 首版只承诺手机端体验，PC 端批量录入仅作为历史 Web 基线能力保留
+- 需要额外处理 Android 软键盘、底部安全区和固定操作栏遮挡问题
 
 ### 错误处理模式
 
@@ -477,6 +504,21 @@ $$ LANGUAGE plpgsql;
 - 使用 Vant Toast/Dialog 展示用户友好的中文错误提示
 - 网络错误自动重试（1次）
 - 关键操作（确认单据）前二次确认弹窗
+
+### Android 首版降级策略
+
+为优先交付稳定可用的首版，以下能力允许显式降级：
+
+- **Realtime**：默认关闭，只保留手动刷新和关键场景返回后刷新
+- **拍照识图**：首版可关闭入口，保留后端识别链路作为后续能力
+- **文件导出**：先移除浏览器下载模型，待接入原生文件/分享能力后再恢复
+- **PC 批量录入**：不作为 Android 继续演进目标
+
+### Primary Risks
+
+- **网络误判风险**：Android 只能移除网页入口问题，不能自动解决 Supabase / Edge Function 公网可达性
+- **安装交付风险**：APK 安装、未知来源授权、覆盖升级和 keystore 管理都属于新增运维工作
+- **运行时适配风险**：返回键、前后台恢复、软键盘、文件系统和权限体验会显著影响实际可用性
 
 ---
 
