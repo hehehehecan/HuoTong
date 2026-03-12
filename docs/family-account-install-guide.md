@@ -2,6 +2,11 @@
 
 本文档用于家庭内测首轮交付，目标是让家人可在无人陪同情况下完成安装与登录。
 
+关联文档：
+
+- Android 分发与更新入口：`docs/android-apk-distribution.md`
+- Android 真机回归与反馈闭环：`docs/android-regression-feedback-loop.md`
+
 ## 1. 交付包清单（维护者）
 
 维护者分发时至少提供以下内容：
@@ -69,4 +74,7 @@
 - 机型
 - 网络环境
 - 复现步骤
+- 问题现象描述
 - 截图（可选）
+
+建议直接复用：`docs/android-regression-feedback-loop.md` 中的反馈模板，保证字段统一。

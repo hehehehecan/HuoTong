@@ -17,6 +17,7 @@ import {
   openApkDownloadEntry,
 } from '../lib/apkDistribution'
 import { getFamilyOnboardingMessage } from '../lib/accountOnboarding'
+import { getAndroidFeedbackMessage } from '../lib/androidFeedback'
 
 const route = useRoute()
 const router = useRouter()
@@ -81,6 +82,16 @@ async function handleShowFamilyOnboarding() {
   })
 }
 
+async function handleShowFeedbackTemplate() {
+  await showConfirmDialog({
+    title: '问题反馈模板',
+    message: getAndroidFeedbackMessage(),
+    confirmButtonText: '我知道了',
+    showCancelButton: false,
+    closeOnClickOverlay: true,
+  })
+}
+
 onMounted(async () => {
   if (!isMorePage.value) return
   const info = await getAppVersionInfo()
@@ -113,6 +124,12 @@ onMounted(async () => {
         is-link
         label="安装步骤、登录方式、忘记密码与常见问题"
         @click="handleShowFamilyOnboarding"
+      />
+      <van-cell
+        title="问题反馈模板"
+        is-link
+        label="反馈请包含版本号、机型、网络环境和复现步骤"
+        @click="handleShowFeedbackTemplate"
       />
       <van-cell
         v-if="platformConfig.webExportDownloadEnabled"

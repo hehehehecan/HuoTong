@@ -5,6 +5,7 @@
 配套文档：
 
 - 家庭首次安装与账号分发：`docs/family-account-install-guide.md`
+- Android 真机回归与反馈闭环：`docs/android-regression-feedback-loop.md`
 
 ## 1. 固定分发入口
 
@@ -66,4 +67,5 @@ App 内固定入口：`更多` 页的 `更新说明`。
   - APK 下载入口（或 App 内固定入口指引）；
   - 家庭测试账号（通过私密渠道）；
   - `docs/family-account-install-guide.md` 文档链接。
-- 反馈问题时，建议用户同时提供版本号、机型、网络环境和复现步骤，便于快速定位。
+- 反馈问题时，建议用户同时提供版本号、机型、网络环境、复现步骤和问题现象描述，便于快速定位。
+- 真机回归与反馈记录建议统一使用 `docs/android-regression-feedback-loop.md` 中的模板与决策规则。
