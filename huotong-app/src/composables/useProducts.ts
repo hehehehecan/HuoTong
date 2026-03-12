@@ -1,7 +1,7 @@
 import { ref, onScopeDispose } from 'vue'
 import { supabase } from '../lib/supabase'
 import { subscribeTable } from '../lib/realtime'
-import type { PostgrestError } from '@supabase/supabase-js'
+import { withNetworkRetry } from '../lib/networkRetry'
 
 export interface Product {
   id: string
@@ -20,27 +20,6 @@ export interface ProductInput {
   sell_price?: number
   buy_price?: number
   stock?: number
-}
-
-function isNetworkError(err: PostgrestError | Error): boolean {
-  const msg = err?.message?.toLowerCase() ?? ''
-  return (
-    msg.includes('fetch') ||
-    msg.includes('network') ||
-    msg.includes('failed to fetch') ||
-    msg.includes('networkerror')
-  )
-}
-
-async function withRetry<T>(fn: () => Promise<T>, retries = 1): Promise<T> {
-  try {
-    return await fn()
-  } catch (e) {
-    if (retries > 0 && isNetworkError(e as Error)) {
-      return await fn()
-    }
-    throw e
-  }
 }
 
 /** Escape % and _ for use in Supabase ilike pattern (literal match). */
@@ -66,10 +45,12 @@ export function useProducts() {
     currentKeyword = ''
     loading.value = true
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('name', { ascending: true })
+      const { data, error } = await withNetworkRetry(async () =>
+        await supabase
+          .from('products')
+          .select('*')
+          .order('name', { ascending: true })
+      )
       if (error) throw error
       const nextProducts = (data ?? []) as Product[]
       if (queryId === latestQueryId) {
@@ -89,7 +70,7 @@ export function useProducts() {
       buy_price: input.buy_price ?? 0,
       stock: input.stock ?? 0,
     }
-    const result = await withRetry(async () => {
+    const result = await withNetworkRetry(async () => {
       const r = await supabase.from('products').insert(payload).select().single()
       if (r.error) throw r.error
       return r.data as Product
@@ -106,11 +87,13 @@ export function useProducts() {
     try {
       const pattern = `%${escapeIlike(k)}%`
       const quoted = `"${pattern.replace(/"/g, '""')}"`
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .or(`name.ilike.${quoted},spec.ilike.${quoted}`)
-        .order('name', { ascending: true })
+      const { data, error } = await withNetworkRetry(async () =>
+        await supabase
+          .from('products')
+          .select('*')
+          .or(`name.ilike.${quoted},spec.ilike.${quoted}`)
+          .order('name', { ascending: true })
+      )
       if (error) throw error
       const nextProducts = (data ?? []) as Product[]
       if (queryId === latestQueryId) {
@@ -123,11 +106,13 @@ export function useProducts() {
   }
 
   async function getById(id: string): Promise<Product | null> {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single()
+    const { data, error } = await withNetworkRetry(async () =>
+      await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single()
+    )
     if (error) {
       if (error.code === 'PGRST116') return null
       throw error
@@ -144,7 +129,7 @@ export function useProducts() {
     if (input.spec !== undefined) payload.spec = input.spec?.trim() ?? ''
     if (input.sell_price !== undefined) payload.sell_price = input.sell_price
     if (input.buy_price !== undefined) payload.buy_price = input.buy_price
-    const result = await withRetry(async () => {
+    const result = await withNetworkRetry(async () => {
       const r = await supabase
         .from('products')
         .update(payload)
@@ -158,7 +143,7 @@ export function useProducts() {
   }
 
   async function remove(id: string): Promise<void> {
-    await withRetry(async () => {
+    await withNetworkRetry(async () => {
       const { error } = await supabase.from('products').delete().eq('id', id)
       if (error) throw error
     })
@@ -173,7 +158,7 @@ export function useProducts() {
       buy_price: input.buy_price ?? 0,
       stock: input.stock ?? 0,
     }))
-    const result = await withRetry(async () => {
+    const result = await withNetworkRetry(async () => {
       const { data, error } = await supabase.from('products').insert(rows).select('id')
       if (error) throw error
       return { count: (data ?? []).length }

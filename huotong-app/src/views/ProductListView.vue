@@ -10,6 +10,7 @@ const router = useRouter()
 const { products, loading, fetchAll, search } = useProducts()
 const refreshing = ref(false)
 const searchKeyword = ref('')
+const loadError = ref('')
 
 const DESKTOP_BREAKPOINT = 768
 const isDesktop = ref(false)
@@ -21,7 +22,12 @@ function runSearch(options?: { silent?: boolean }): Promise<void> {
   const silent = options?.silent ?? false
   const k = searchKeyword.value.trim()
   const task = k ? search(k) : fetchAll()
-  return task.then(() => undefined).catch((error) => {
+  return task.then(() => {
+    loadError.value = ''
+  }).catch((error) => {
+    if (!k) {
+      loadError.value = '网络异常，加载商品失败'
+    }
     if (!silent) {
       showToast({ type: 'fail', message: k ? '搜索失败，请重试' : '加载商品失败，请下拉重试' })
     }
@@ -32,7 +38,7 @@ function runSearch(options?: { silent?: boolean }): Promise<void> {
 function onSearchInput() {
   if (debounceTimer) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
-    void runSearch()
+    void runSearch().catch(() => {})
   }, 300)
 }
 
@@ -45,6 +51,11 @@ async function onRefresh() {
   } finally {
     refreshing.value = false
   }
+}
+
+function retryLoad() {
+  loadError.value = ''
+  void runSearch().catch(() => {})
 }
 
 function goToNew() {
@@ -82,7 +93,7 @@ onMounted(() => {
     isDesktop.value = event.matches
   }
   mediaQueryList.addEventListener('change', onDesktopChange)
-  void runSearch()
+  void runSearch().catch(() => {})
 })
 
 onUnmounted(() => {
@@ -120,6 +131,10 @@ onUnmounted(() => {
             @click="goToEdit(p.id)"
           />
         </template>
+        <div v-else-if="loadError" class="empty">
+          <p>{{ loadError }}</p>
+          <van-button size="small" type="primary" plain @click="retryLoad">重试加载</van-button>
+        </div>
         <div v-else-if="isSearchEmpty" class="empty">
           <p>没有找到相关商品</p>
         </div>

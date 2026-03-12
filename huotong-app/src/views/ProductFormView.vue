@@ -3,6 +3,7 @@ import { ref, reactive, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Form as VanForm, Field as VanField, Button as VanButton, showToast, showConfirmDialog } from 'vant'
 import { useProducts } from '../composables/useProducts'
+import { requestRetryOnNetworkError } from '../lib/networkRetry'
 
 const router = useRouter()
 const route = useRoute()
@@ -92,8 +93,17 @@ async function onSubmit() {
       showToast({ type: 'success', message: '保存成功' })
     }
     router.push('/products')
-  } catch {
+  } catch (err) {
     showToast({ type: 'fail', message: '保存失败，请检查网络后重试' })
+    const shouldRetry = await requestRetryOnNetworkError(err, {
+      title: '网络异常',
+      message: '保存失败，请检查网络后重试',
+      confirmButtonText: '重试保存',
+      cancelButtonText: '稍后再试',
+    })
+    if (shouldRetry) {
+      await onSubmit()
+    }
   } finally {
     submitting.value = false
   }

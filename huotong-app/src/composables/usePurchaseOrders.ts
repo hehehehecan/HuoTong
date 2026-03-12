@@ -2,7 +2,7 @@ import { ref, onScopeDispose } from 'vue'
 import { supabase } from '../lib/supabase'
 import { subscribeTable } from '../lib/realtime'
 import { platformConfig } from '../lib/platform'
-import type { PostgrestError } from '@supabase/supabase-js'
+import { withNetworkRetry } from '../lib/networkRetry'
 
 export interface PurchaseOrder {
   id: string
@@ -63,16 +63,6 @@ function toMoney(value: number): number {
   return Math.round(normalized * 100) / 100
 }
 
-function isNetworkError(err: PostgrestError | Error): boolean {
-  const msg = err?.message?.toLowerCase() ?? ''
-  return (
-    msg.includes('fetch') ||
-    msg.includes('network') ||
-    msg.includes('failed to fetch') ||
-    msg.includes('networkerror')
-  )
-}
-
 function getErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
@@ -83,17 +73,6 @@ function isNonDraftError(err: unknown): boolean {
   if (msg.includes('不是') && msg.includes('draft')) return true
   if (msg.includes('not') && msg.includes('draft')) return true
   return false
-}
-
-async function withRetry<T>(fn: () => Promise<T>, retries = 1): Promise<T> {
-  try {
-    return await fn()
-  } catch (e) {
-    if (retries > 0 && isNetworkError(e as Error)) {
-      return await fn()
-    }
-    throw e
-  }
 }
 
 function generateOrderNo(): string {
@@ -144,7 +123,7 @@ export function usePurchaseOrders() {
 
     loading.value = true
     try {
-      return await withRetry(async () => {
+      return await withNetworkRetry(async () => {
         const { data: orderData, error: orderError } = await supabase
           .from('purchase_orders')
           .insert({
@@ -195,7 +174,7 @@ export function usePurchaseOrders() {
   async function list(filters?: PurchaseOrderListFilters): Promise<PurchaseOrderWithSupplier[]> {
     loading.value = true
     try {
-      return await withRetry(async () => {
+      return await withNetworkRetry(async () => {
         let q = supabase
           .from('purchase_orders')
           .select('id, order_no, supplier_id, total_amount, status, note, created_at, updated_at, suppliers(name)')
@@ -234,7 +213,7 @@ export function usePurchaseOrders() {
     loading.value = true
     try {
       try {
-        await withRetry(async () => {
+        await withNetworkRetry(async () => {
           const { error } = await supabase.rpc('confirm_purchase_order', {
             order_id: orderId,
           })
@@ -265,7 +244,7 @@ export function usePurchaseOrders() {
     }
 
     try {
-      const { data, error } = await withRetry(() =>
+      const { data, error } = await withNetworkRetry(() =>
         supabase.functions.invoke('recognize-receipt', {
           body: { image_base64: imageBase64 },
         })

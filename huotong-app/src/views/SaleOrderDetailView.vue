@@ -6,6 +6,7 @@ import { useSaleOrders } from '../composables/useSaleOrders'
 import { useCustomers } from '../composables/useCustomers'
 import type { SaleOrder } from '../composables/useSaleOrders'
 import type { SaleOrderItemWithProduct } from '../composables/useSaleOrders'
+import { requestRetryOnNetworkError } from '../lib/networkRetry'
 
 const route = useRoute()
 const orderId = computed(() => route.params.id as string)
@@ -69,6 +70,16 @@ async function handleConfirm() {
     showToast({ type: 'success', message: '出货单已确认' })
     await loadOrder()
   } catch (e) {
+    const shouldRetry = await requestRetryOnNetworkError(e, {
+      title: '网络异常',
+      message: '确认出货失败，请检查网络后重试',
+      confirmButtonText: '重试确认',
+      cancelButtonText: '稍后再试',
+    })
+    if (shouldRetry) {
+      await handleConfirm()
+      return
+    }
     const msg = parseConfirmError(e) ?? '操作失败，请重试'
     showToast({ type: 'fail', message: msg })
   }

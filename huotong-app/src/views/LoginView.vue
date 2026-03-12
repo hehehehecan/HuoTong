@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { Field, Form, Button as VanButton } from 'vant'
 import { useUserStore } from '../stores/user'
+import { requestRetryOnNetworkError } from '../lib/networkRetry'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -22,14 +23,25 @@ async function onSubmit() {
     await userStore.login(email.value.trim(), password.value)
     router.replace('/')
   } catch (err: unknown) {
-    const message =
-      typeof err === 'object' &&
-      err !== null &&
-      'message' in err &&
-      String((err as { message: unknown }).message).toLowerCase().includes('invalid login credentials')
-        ? '邮箱或密码错误'
-        : '登录失败，请稍后重试'
-    showToast(message)
+    const messageText =
+      typeof err === 'object' && err !== null && 'message' in err
+        ? String((err as { message: unknown }).message)
+        : ''
+    if (messageText.toLowerCase().includes('invalid login credentials')) {
+      showToast('邮箱或密码错误')
+      return
+    }
+
+    showToast('登录失败，请检查网络后重试')
+    const shouldRetry = await requestRetryOnNetworkError(err, {
+      title: '网络异常',
+      message: '登录失败，请检查网络后重试',
+      confirmButtonText: '重试登录',
+      cancelButtonText: '稍后再试',
+    })
+    if (shouldRetry) {
+      await onSubmit()
+    }
   } finally {
     loading.value = false
   }

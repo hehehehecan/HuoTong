@@ -103,9 +103,9 @@ development_status:
   9-2-android-back-button-navigation: done
   epic-9-retrospective: optional
 
-  epic-10: in-progress
+  epic-10: done
   10-2-android-first-release-degrade-entry-shaping: done
-  10-1-network-error-feedback-retry: backlog
+  10-1-network-error-feedback-retry: done
   epic-10-retrospective: optional
 
   epic-11: backlog

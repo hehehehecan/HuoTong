@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { withNetworkRetry } from '../lib/networkRetry'
 
 export type SessionRefreshResult = 'valid' | 'invalid' | 'error'
 
@@ -40,7 +41,10 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function login(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await withNetworkRetry(
+      () => supabase.auth.signInWithPassword({ email, password }),
+      1
+    )
     if (error) throw error
     if (data.session) setAuth(data.session)
   }
