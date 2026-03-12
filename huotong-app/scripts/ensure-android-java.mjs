@@ -35,7 +35,7 @@ const { ok, output } = getJavaVersionOutput();
 const majorVersion = parseJavaMajorVersion(output);
 
 if (!ok || !majorVersion) {
-  console.error('Unable to detect Java version. Install JDK 17+ and retry.');
+  console.error('Unable to detect Java version. Install JDK 21+ and retry.');
   if (output) {
     console.error(output);
   }

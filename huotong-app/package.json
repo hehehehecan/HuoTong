@@ -13,6 +13,7 @@
     "android:sync": "npm run build && npx cap sync android",
     "android:open": "npx cap open android",
     "android:build": "node ./scripts/ensure-android-java.mjs && npm run android:sync && ./android/gradlew -p android assembleDebug",
+    "android:build:release": "node ./scripts/ensure-android-java.mjs && node ./scripts/ensure-android-signing.mjs && npm run android:sync && ./android/gradlew -p android assembleRelease",
     "android:run": "node ./scripts/ensure-android-java.mjs && npm run android:sync && npx cap run android"
   },
   "dependencies": {

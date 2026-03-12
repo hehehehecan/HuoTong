@@ -73,3 +73,5 @@ npm run android:run
 - 正式包名与 `applicationId` 冻结
 - `versionName` / `versionCode`
 - keystore 签名与覆盖升级策略
+
+对应文档：`docs/android-app-identity-signing.md`
