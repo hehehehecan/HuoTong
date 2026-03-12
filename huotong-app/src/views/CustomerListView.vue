@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button as VanButton, showToast } from 'vant'
 import { useCustomers } from '../composables/useCustomers'
+import { useAppResumeRefresh } from '../composables/useAppResumeRefresh'
 
 const router = useRouter()
 const { customers, loading, fetchAll, search } = useCustomers()
@@ -50,6 +51,11 @@ function goToDetail(id: string) {
 
 const isSearchEmpty =
   computed(() => searchKeyword.value.trim() !== '' && customers.value.length === 0)
+
+useAppResumeRefresh(
+  () => runSearch({ silent: true }),
+  () => showToast({ type: 'fail', message: '前台恢复后刷新失败，请下拉重试' })
+)
 
 onMounted(() => {
   void runSearch().catch(() => undefined)

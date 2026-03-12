@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button as VanButton, showToast } from 'vant'
 import { useProducts } from '../composables/useProducts'
+import { useAppResumeRefresh } from '../composables/useAppResumeRefresh'
 
 const router = useRouter()
 const { products, loading, fetchAll, search } = useProducts()
@@ -63,6 +64,11 @@ function formatPrice(n: number) {
 
 const isSearchEmpty =
   computed(() => searchKeyword.value.trim() !== '' && products.value.length === 0)
+
+useAppResumeRefresh(
+  () => runSearch({ silent: true }),
+  () => showToast({ type: 'fail', message: '前台恢复后刷新失败，请下拉重试' })
+)
 
 onMounted(() => {
   mediaQueryList = window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`)

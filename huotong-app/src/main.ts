@@ -21,11 +21,13 @@ import {
   CollapseItem,
   Empty,
   Tag,
+  showToast,
 } from 'vant'
 import 'vant/lib/index.css'
 import router from './router'
 import App from './App.vue'
 import { useUserStore } from './stores/user'
+import { onAppResume } from './lib/appLifecycle'
 import './style.css'
 
 const app = createApp(App)
@@ -60,6 +62,29 @@ async function bootstrap() {
   app.use(router)
   await router.isReady()
   app.mount('#app')
+
+  let checkingSession = false
+  onAppResume(async () => {
+    if (checkingSession) return
+    checkingSession = true
+    try {
+      const sessionState = await userStore.refreshSession()
+      if (sessionState !== 'invalid') return
+
+      const currentPath = router.currentRoute.value.fullPath || '/'
+      if (currentPath.startsWith('/login')) return
+      showToast({
+        type: 'fail',
+        message: '登录状态已失效，请重新登录',
+      })
+      await router.replace({
+        path: '/login',
+        query: { redirect: currentPath },
+      })
+    } finally {
+      checkingSession = false
+    }
+  })
 }
 
 bootstrap()

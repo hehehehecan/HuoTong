@@ -7,6 +7,7 @@ import {
   type CustomerReceivableSummary,
   type ReceivableWithOrder,
 } from '../composables/useReceivables'
+import { useAppResumeRefresh } from '../composables/useAppResumeRefresh'
 
 const router = useRouter()
 const { loading, listGroupedByCustomer, listByCustomer, recordPayment, onInvalidate } = useReceivables()
@@ -78,31 +79,56 @@ async function loadData() {
   try {
     summaries.value = await listGroupedByCustomer()
   } catch (e) {
-    showToast('加载失败，请重试')
+    throw e
   }
+}
+
+async function loadCustomerDetails(customerId: string, options?: { silent?: boolean }) {
+  try {
+    const details = await listByCustomer(customerId)
+    customerDetails.value.set(customerId, details)
+  } catch (e) {
+    if (!options?.silent) {
+      showToast('加载明细失败')
+    }
+    throw e
+  }
+}
+
+async function reloadAfterResume() {
+  await loadData()
+  const customerId = activeName.value.trim()
+  if (!customerId) return
+  await loadCustomerDetails(customerId, { silent: true })
 }
 
 async function onRefresh() {
   refreshing.value = true
   activeName.value = ''
   customerDetails.value.clear()
-  await loadData()
-  refreshing.value = false
+  try {
+    await loadData()
+  } catch (e) {
+    showToast('刷新失败，请重试')
+  } finally {
+    refreshing.value = false
+  }
 }
 
-onScopeDispose(onInvalidate(loadData))
+onScopeDispose(onInvalidate(() => {
+  void reloadAfterResume().catch(() => undefined)
+}))
+useAppResumeRefresh(
+  reloadAfterResume,
+  () => showToast('前台恢复后刷新失败，请下拉重试')
+)
 
 async function onCollapseChange(name: string | number) {
   const customerId = String(name || '').trim()
   if (!customerId) return
 
   if (!customerDetails.value.has(customerId)) {
-    try {
-      const details = await listByCustomer(customerId)
-      customerDetails.value.set(customerId, details)
-    } catch (e) {
-      showToast('加载明细失败')
-    }
+    await loadCustomerDetails(customerId)
   }
 }
 
@@ -160,7 +186,9 @@ async function confirmPayment() {
 }
 
 onMounted(() => {
-  loadData()
+  void loadData().catch(() => {
+    showToast('加载失败，请重试')
+  })
 })
 </script>
 

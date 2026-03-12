@@ -6,6 +6,7 @@ import { usePurchaseOrders } from '../composables/usePurchaseOrders'
 import { useSuppliers } from '../composables/useSuppliers'
 import type { PurchaseOrderWithSupplier } from '../composables/usePurchaseOrders'
 import type { PurchaseOrderListFilters } from '../composables/usePurchaseOrders'
+import { useAppResumeRefresh } from '../composables/useAppResumeRefresh'
 
 const router = useRouter()
 const { list, loading, onInvalidate } = usePurchaseOrders()
@@ -95,6 +96,10 @@ async function openFilterPopup() {
 }
 
 onScopeDispose(onInvalidate(loadList))
+useAppResumeRefresh(
+  loadList,
+  () => showToast({ type: 'fail', message: '前台恢复后刷新失败，请下拉重试' })
+)
 
 function goToDetail(id: string) {
   router.push(`/purchase-orders/${id}`)

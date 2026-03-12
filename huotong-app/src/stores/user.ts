@@ -3,21 +3,29 @@ import { ref, computed } from 'vue'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
+export type SessionRefreshResult = 'valid' | 'invalid' | 'error'
+
 export const useUserStore = defineStore('user', () => {
   const user = ref<User | null>(null)
   const session = ref<Session | null>(null)
 
   const isLoggedIn = computed(() => !!session.value)
 
-  async function initSession() {
+  async function refreshSession(): Promise<SessionRefreshResult> {
     const { data: { session: s }, error } = await supabase.auth.getSession()
-    if (!error && s) {
-      session.value = s
-      user.value = s.user
-    } else {
-      session.value = null
-      user.value = null
+    if (error) {
+      return 'error'
     }
+    if (s) {
+      setAuth(s)
+      return 'valid'
+    }
+    setAuth(null)
+    return 'invalid'
+  }
+
+  async function initSession() {
+    await refreshSession()
   }
 
   function setAuth(s: Session | null) {
@@ -46,6 +54,7 @@ export const useUserStore = defineStore('user', () => {
     user,
     session,
     isLoggedIn,
+    refreshSession,
     initSession,
     subscribeAuth,
     login,

@@ -6,6 +6,7 @@ import { useSaleOrders } from '../composables/useSaleOrders'
 import { useCustomers } from '../composables/useCustomers'
 import type { SaleOrderWithCustomer } from '../composables/useSaleOrders'
 import type { SaleOrderListFilters } from '../composables/useSaleOrders'
+import { useAppResumeRefresh } from '../composables/useAppResumeRefresh'
 
 const router = useRouter()
 const { list, loading, onInvalidate } = useSaleOrders()
@@ -95,6 +96,10 @@ async function openFilterPopup() {
 }
 
 onScopeDispose(onInvalidate(loadList))
+useAppResumeRefresh(
+  loadList,
+  () => showToast({ type: 'fail', message: '前台恢复后刷新失败，请下拉重试' })
+)
 
 function goToDetail(id: string) {
   router.push(`/sale-orders/${id}`)

@@ -7,6 +7,7 @@ import {
   type SupplierPayableSummary,
   type PayableWithOrder,
 } from '../composables/usePayables'
+import { useAppResumeRefresh } from '../composables/useAppResumeRefresh'
 
 const router = useRouter()
 const { loading, listGroupedBySupplier, listBySupplier, recordPayment, onInvalidate } = usePayables()
@@ -78,31 +79,56 @@ async function loadData() {
   try {
     summaries.value = await listGroupedBySupplier()
   } catch (e) {
-    showToast('加载失败，请重试')
+    throw e
   }
+}
+
+async function loadSupplierDetails(supplierId: string, options?: { silent?: boolean }) {
+  try {
+    const details = await listBySupplier(supplierId)
+    supplierDetails.value.set(supplierId, details)
+  } catch (e) {
+    if (!options?.silent) {
+      showToast('加载明细失败')
+    }
+    throw e
+  }
+}
+
+async function reloadAfterResume() {
+  await loadData()
+  const supplierId = activeName.value.trim()
+  if (!supplierId) return
+  await loadSupplierDetails(supplierId, { silent: true })
 }
 
 async function onRefresh() {
   refreshing.value = true
   activeName.value = ''
   supplierDetails.value.clear()
-  await loadData()
-  refreshing.value = false
+  try {
+    await loadData()
+  } catch (e) {
+    showToast('刷新失败，请重试')
+  } finally {
+    refreshing.value = false
+  }
 }
 
-onScopeDispose(onInvalidate(loadData))
+onScopeDispose(onInvalidate(() => {
+  void reloadAfterResume().catch(() => undefined)
+}))
+useAppResumeRefresh(
+  reloadAfterResume,
+  () => showToast('前台恢复后刷新失败，请下拉重试')
+)
 
 async function onCollapseChange(name: string | number) {
   const supplierId = String(name || '').trim()
   if (!supplierId) return
 
   if (!supplierDetails.value.has(supplierId)) {
-    try {
-      const details = await listBySupplier(supplierId)
-      supplierDetails.value.set(supplierId, details)
-    } catch (e) {
-      showToast('加载明细失败')
-    }
+    await loadSupplierDetails(supplierId)
   }
 }
 
@@ -160,7 +186,9 @@ async function confirmPayment() {
 }
 
 onMounted(() => {
-  loadData()
+  void loadData().catch(() => {
+    showToast('加载失败，请重试')
+  })
 })
 </script>
 
