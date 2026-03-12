@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showLoadingToast, showSuccessToast, showFailToast, closeToast } from 'vant'
 import { exportDataAsJson } from '../composables/useExportData'
 import { platformConfig } from '../lib/platform'
+import { getAppVersionInfo } from '../lib/appInfo'
 
 const route = useRoute()
 const router = useRouter()
@@ -11,6 +12,7 @@ const title = computed(() => (route.meta.title as string) ?? '')
 const message = computed(() => (route.meta.message as string) ?? '功能开发中，敬请期待')
 const isMorePage = computed(() => route.path === '/more')
 const exporting = ref(false)
+const appVersionLabel = ref('读取中...')
 
 function goToStock() {
   router.push('/stock')
@@ -35,6 +37,12 @@ async function handleExportData() {
     exporting.value = false
   }
 }
+
+onMounted(async () => {
+  if (!isMorePage.value) return
+  const info = await getAppVersionInfo()
+  appVersionLabel.value = info.label
+})
 </script>
 
 <template>
@@ -43,6 +51,7 @@ async function handleExportData() {
     <p class="placeholder-message">{{ message }}</p>
     <div v-if="isMorePage" class="shortcuts">
       <van-cell title="库存总览" is-link @click="goToStock" />
+      <van-cell title="当前版本" :value="appVersionLabel" />
       <van-cell
         v-if="platformConfig.webExportDownloadEnabled"
         title="导出数据"

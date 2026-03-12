@@ -108,8 +108,8 @@ development_status:
   10-1-network-error-feedback-retry: done
   epic-10-retrospective: optional
 
-  epic-11: backlog
-  11-1-version-display-overwrite-upgrade-verification: backlog
+  epic-11: in-progress
+  11-1-version-display-overwrite-upgrade-verification: done
   11-2-apk-distribution-update-entry: backlog
   epic-11-retrospective: optional
 
