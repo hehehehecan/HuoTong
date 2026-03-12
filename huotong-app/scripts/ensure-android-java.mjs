@@ -42,9 +42,9 @@ if (!ok || !majorVersion) {
   process.exit(1);
 }
 
-if (majorVersion < 17) {
-  console.error(`Android build requires JDK 17+. Current Java major version: ${majorVersion}.`);
-  console.error('Set JAVA_HOME to a JDK 17+ installation, then rerun this command.');
+if (majorVersion < 21) {
+  console.error(`Android build requires JDK 21+. Current Java major version: ${majorVersion}.`);
+  console.error('Set JAVA_HOME to a JDK 21+ installation, then rerun this command.');
   process.exit(1);
 }
 

@@ -267,7 +267,7 @@
 
 **已验证**：否
 
-1. 在 `huotong-app` 执行 `java -version`，确认当前 JDK 为 17 或更高版本；若仍是 Java 11/8，应先切换 `JAVA_HOME` 再继续后续步骤。
+1. 在 `huotong-app` 执行 `java -version`，确认当前 JDK 为 21 或更高版本；若仍是 Java 17/11/8，应先切换 `JAVA_HOME` 再继续后续步骤。
 2. 执行 `npm run android:sync`，应成功完成 build + cap sync，且 `android/app/src/main/assets/public` 下可见最新前端资源文件。
 3. 执行 `npm run android:build`，应成功完成 `assembleDebug`，证明当前环境可以产出 Android 调试包。
 4. 执行 `npm run android:open`，Android Studio 能正常打开 `android/` 工程并完成 Gradle 同步。

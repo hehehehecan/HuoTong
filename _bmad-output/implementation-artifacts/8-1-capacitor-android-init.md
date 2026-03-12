@@ -1,6 +1,6 @@
 # Story 8.1: Capacitor Android 工程初始化
 
-Status: in-progress
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -81,8 +81,8 @@ gpt-5.3-codex
 - 已补充 `package.json` Android 脚本，统一同步/运行入口，降低后续 Story 操作成本。
 - 本地自动化验证通过：`npm run test:run`（13 tests）、`npm run build`、`npm run android:sync`。
 - `npx cap run android` 在当前环境停留在等待设备/模拟器阶段，已转为“需用户真机验证”并写入本地验证清单。
-- CR 修复：新增 `npm run android:build` 与 `huotong-app/scripts/ensure-android-java.mjs`，在运行 Gradle 前预检 JDK 版本，避免 Java 11 环境下直接报 Android Gradle Plugin 错误。
-- CR 发现：当前机器仅有 Java 11，`./android/gradlew assembleDebug` 仍无法完成；需安装或切换到 JDK 17+ 后，重新验证 APK 产出与真机启动。
+- CR 修复：新增 `npm run android:build` 与 `huotong-app/scripts/ensure-android-java.mjs`，在运行 Gradle 前预检 JDK 版本，避免 Java 版本不达标时直接进入模糊失败。
+- CR 复核：Capacitor 生成的 `capacitor.build.gradle` 编译目标为 Java 21；本轮已切换到 JDK 21，`npm run android:build` 成功产出 `app-debug.apk`，`npm run android:run` 已成功部署到在线模拟器 `emulator-5564`。
 - CR 修复：将 Android 模板测试中的默认包名与断言更新为 `com.huotong.app`，避免后续运行 Android 测试时出现明显误报。
 
 ### File List
@@ -113,22 +113,24 @@ Hezhangcan
 
 ### Findings Summary
 
-- High：1（已修复 0，剩余 1）
-- Medium：2（已修复 2，剩余 0）
+- High：1（已修复 1，剩余 0）
+- Medium：3（已修复 3，剩余 0）
 - Low：0
 
 ### Findings
 
-1. High：当前机器默认 `java -version` 为 11，执行 `./android/gradlew -p android assembleDebug` 直接失败，尚未完成 AC1 所要求的“可产出 Android 调试包”验证；该项需要在安装或切换到 JDK 17+ 后重新执行。
+1. High：当前机器默认 `java -version` 为 11，且即便切到 JDK 17，`./android/gradlew -p android assembleDebug` 仍会因为 `capacitor.build.gradle` 使用 `JavaVersion.VERSION_21` 而失败，尚未完成 AC1 所要求的“可产出 Android 调试包”验证；本轮已通过安装并切换到 JDK 21 修复。
 2. Medium：原实现只有 `android:sync` / `android:run`，缺少显式的 APK 构建验证入口，导致“能否产出调试包”没有稳定、可复现的验证命令；本轮已补充 `android:build`。
 3. Medium：Android 模板测试仍保留默认 `com.getcapacitor.app` 包名与断言，后续执行 Android 测试会与当前应用标识不一致；本轮已修复为 `com.huotong.app`。
+4. Medium：最初文档与校验脚本只要求 JDK 17，会误导后续开发者再次撞上 Java 21 编译门槛；本轮已统一修正为 JDK 21+。
 
 ### Verification
 
 - 通过：`npm run test:run`
 - 通过：`npm run android:sync`
-- 失败：`./android/gradlew -p android assembleDebug`（原因：当前环境使用 Java 11，Android Gradle Plugin 要求 Java 17+）
+- 通过：`JAVA_HOME=<jdk21> npm run android:build`
+- 通过：`JAVA_HOME=<jdk21> npm run android:run`（已部署到 `emulator-5564`）
 
 ### Recommended Next Step
 
-- 安装或切换到 JDK 17+，然后重新执行 `npm run android:build` 与 `npm run android:run`，完成 APK 产出和真机启动验证后再将状态更新为 `done`。
+- 如需补全人工验收，可在模拟器内手动确认登录页/首页首屏与本地资源加载路径；代码审查阻塞已清除，本 Story 可进入 `done`。

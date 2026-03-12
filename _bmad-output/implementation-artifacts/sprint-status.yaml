@@ -94,7 +94,7 @@ development_status:
   # Order is intentionally aligned with the recommended BMAD story execution queue.
 
   epic-8: in-progress
-  8-1-capacitor-android-init: in-progress
+  8-1-capacitor-android-init: done
   8-2-android-app-identity-build-config: backlog
   epic-8-retrospective: optional
 

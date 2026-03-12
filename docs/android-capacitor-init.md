@@ -12,9 +12,9 @@
 
 - Node.js 20+
 - Android Studio（用于打开工程、设备管理和后续调试）
-- JDK 17 或更高版本
+- JDK 21 或更高版本
 
-如果本机默认 `java -version` 低于 17，`npm run android:build` / `npm run android:run` 会直接提示失败；先切换 `JAVA_HOME` 到 JDK 17+ 再继续。
+如果本机默认 `java -version` 低于 21，`npm run android:build` / `npm run android:run` 会直接提示失败；先切换 `JAVA_HOME` 到 JDK 21+ 再继续。
 
 ## 一次性初始化（已完成）
 
@@ -59,7 +59,7 @@ npm run android:run
 
 ## 验收建议
 
-1. 先执行 `java -version`，确认当前 JDK 为 17 或更高版本。
+1. 先执行 `java -version`，确认当前 JDK 为 21 或更高版本。
 2. 运行 `npm run android:sync`，确认前端资源同步成功。
 3. 运行 `npm run android:build`，确认可产出 Android 调试包。
 4. 使用 `npm run android:open` 打开 Android Studio，等待 Gradle 同步完成。
