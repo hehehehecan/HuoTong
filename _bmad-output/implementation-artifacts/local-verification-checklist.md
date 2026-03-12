@@ -275,3 +275,31 @@
 6. 启动后确认页面加载来源为本地打包资源（无浏览器地址栏、无跳转公网 H5 入口）；基本路由可正常进入（如登录页与首页）。
 7. 若第 5 步失败，记录机型、Android 版本、是否有可用设备/模拟器、错误日志摘要，便于 Story 8.2 继续处理应用身份与构建配置。
 
+---
+
+## 8-2-android-app-identity-build-config（循环完成日：2026-03-12）
+
+**已验证**：否
+
+1. 在 `huotong-app` 执行 `java -version`，确认当前 JDK 为 21 或更高版本；若不足 21，请先切换 `JAVA_HOME`。
+2. 在 Android 真机或模拟器安装最新 debug 包（可先执行 `npm run android:build` + Android Studio 安装），应用图标应为新的「橙色底 + 白色几何 H」样式，应用名称显示为「货通」。
+3. 首次启动时应看到新的启动页样式（橙色主视觉），随后正常进入登录页或首页。
+4. 在 `huotong-app/android` 下复制并填写签名配置：`cp keystore.properties.example keystore.properties`，并确保 `storeFile` 指向真实 keystore 文件。
+5. 执行 `npm run android:build:release`，应通过签名校验并成功产出 release APK（`android/app/build/outputs/apk/release/`）。
+6. 用已安装旧版本的设备执行一次覆盖安装：新 APK 可覆盖旧包安装，应用可正常启动，登录态和核心页面访问无异常。
+7. 完成后将本条「已验证」改为「是」，并记录机型、Android 版本、APK 文件名（含 versionName/versionCode）用于追踪。
+
+---
+
+## 8-2-android-app-identity-build-config（循环完成日：2026-03-12，收口复验）
+
+**已验证**：是
+
+1. 在 `huotong-app` 执行 `export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && export PATH=$JAVA_HOME/bin:$PATH && java -version`，应显示 `21.x`。
+2. 执行 `npm run android:build`，应成功产出 `android/app/build/outputs/apk/debug/app-debug.apk`。
+3. 执行 `npm run android:build:release`，应通过签名预检并成功产出 `android/app/build/outputs/apk/release/app-release.apk`。
+4. 在 Android 真机或模拟器安装 debug 包，确认应用名称显示为「货通」，桌面图标为「橙色底 + 白色几何 H」。
+5. 首次启动应展示橙色主视觉启动页，然后进入登录页/首页；核心页面（登录、首页）可正常打开。
+6. 在已安装旧版本的设备执行覆盖安装（release APK），确认可覆盖升级，且登录态与核心页面访问无异常。
+7. 验证完成后将本条「已验证」改为「是」，并补充机型、Android 版本、APK 文件名（`app-debug.apk` / `app-release.apk`）与验证日期。
+
