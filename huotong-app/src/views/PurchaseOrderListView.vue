@@ -7,6 +7,7 @@ import { useSuppliers } from '../composables/useSuppliers'
 import type { PurchaseOrderWithSupplier } from '../composables/usePurchaseOrders'
 import type { PurchaseOrderListFilters } from '../composables/usePurchaseOrders'
 import { useAppResumeRefresh } from '../composables/useAppResumeRefresh'
+import { useBackButtonPopup } from '../composables/useBackButtonPopup'
 
 const router = useRouter()
 const { list, loading, onInvalidate } = usePurchaseOrders()
@@ -100,6 +101,9 @@ useAppResumeRefresh(
   loadList,
   () => showToast({ type: 'fail', message: '前台恢复后刷新失败，请下拉重试' })
 )
+useBackButtonPopup(filterVisible, () => {
+  filterVisible.value = false
+})
 
 function goToDetail(id: string) {
   router.push(`/purchase-orders/${id}`)

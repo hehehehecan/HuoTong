@@ -6,6 +6,7 @@ import { platformConfig } from '../lib/platform'
 import { useCustomers } from '../composables/useCustomers'
 import { useProducts } from '../composables/useProducts'
 import { useSaleOrders } from '../composables/useSaleOrders'
+import { useBackButtonPopup } from '../composables/useBackButtonPopup'
 import type { Customer } from '../composables/useCustomers'
 import type { Product } from '../composables/useProducts'
 
@@ -111,6 +112,15 @@ function openProductPopupForReplace(index: number) {
   productPopupVisible.value = true
   void loadProducts()
 }
+
+useBackButtonPopup(customerPopupVisible, () => {
+  customerPopupVisible.value = false
+})
+useBackButtonPopup(productPopupVisible, () => {
+  productPopupVisible.value = false
+  selectedProductForQty.value = null
+  quantityInput.value = ''
+})
 
 function selectProductForQuantity(p: Product) {
   selectedProductForQty.value = p

@@ -8,6 +8,7 @@ import {
   type ReceivableWithOrder,
 } from '../composables/useReceivables'
 import { useAppResumeRefresh } from '../composables/useAppResumeRefresh'
+import { useBackButtonPopup } from '../composables/useBackButtonPopup'
 
 const router = useRouter()
 const { loading, listGroupedByCustomer, listByCustomer, recordPayment, onInvalidate } = useReceivables()
@@ -151,6 +152,8 @@ function closePaymentPopup() {
   paymentTarget.value = null
   paymentAmount.value = ''
 }
+
+useBackButtonPopup(paymentPopupVisible, closePaymentPopup)
 
 function getRemaining(item: ReceivableWithOrder): number {
   return Math.max(0, toMoney(Number(item.amount) - Number(item.paid_amount)))

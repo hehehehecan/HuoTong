@@ -6,6 +6,7 @@ import { platformConfig } from '../lib/platform'
 import { useSuppliers } from '../composables/useSuppliers'
 import { useProducts } from '../composables/useProducts'
 import { usePurchaseOrders } from '../composables/usePurchaseOrders'
+import { useBackButtonPopup } from '../composables/useBackButtonPopup'
 import type { Supplier } from '../composables/useSuppliers'
 import type { Product } from '../composables/useProducts'
 
@@ -115,6 +116,16 @@ function openProductPopupForReplace(index: number) {
   productPopupVisible.value = true
   void loadProducts()
 }
+
+useBackButtonPopup(supplierPopupVisible, () => {
+  supplierPopupVisible.value = false
+})
+useBackButtonPopup(productPopupVisible, () => {
+  productPopupVisible.value = false
+  selectedProductForQty.value = null
+  quantityInput.value = ''
+  unitPriceInput.value = ''
+})
 
 function selectProductForQuantity(p: Product) {
   selectedProductForQty.value = p

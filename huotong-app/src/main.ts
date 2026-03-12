@@ -22,12 +22,20 @@ import {
   Empty,
   Tag,
   showToast,
+  showConfirmDialog,
 } from 'vant'
+import { App as CapacitorApp } from '@capacitor/app'
 import 'vant/lib/index.css'
 import router from './router'
 import App from './App.vue'
 import { useUserStore } from './stores/user'
 import { onAppResume } from './lib/appLifecycle'
+import {
+  closeActiveDialog,
+  configureBackButtonFallback,
+  registerBackButtonHandler,
+  resolveInAppBackTarget,
+} from './lib/backButton'
 import './style.css'
 
 const app = createApp(App)
@@ -84,6 +92,43 @@ async function bootstrap() {
     } finally {
       checkingSession = false
     }
+  })
+
+  let confirmingExit = false
+  registerBackButtonHandler(() => closeActiveDialog(), 400)
+  configureBackButtonFallback({
+    canNavigateBack: () => !!resolveInAppBackTarget(router.currentRoute.value.path),
+    navigateBack: async () => {
+      const target = resolveInAppBackTarget(router.currentRoute.value.path)
+      if (!target) return
+      await router.push(target)
+    },
+    isExitRoute: () => {
+      const path = router.currentRoute.value.path
+      return path === '/' || path === '/login'
+    },
+    goHome: async () => {
+      if (router.currentRoute.value.path === '/') return
+      await router.push('/')
+    },
+    confirmExit: async () => {
+      if (confirmingExit) return true
+      confirmingExit = true
+      try {
+        await showConfirmDialog({
+          title: '退出应用',
+          message: '确定要退出货通吗？',
+          confirmButtonText: '退出',
+          cancelButtonText: '取消',
+        })
+        await CapacitorApp.exitApp()
+      } catch {
+        // User cancelled exit confirmation; keep app open.
+      } finally {
+        confirmingExit = false
+      }
+      return true
+    },
   })
 }
 

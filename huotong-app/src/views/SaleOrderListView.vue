@@ -7,6 +7,7 @@ import { useCustomers } from '../composables/useCustomers'
 import type { SaleOrderWithCustomer } from '../composables/useSaleOrders'
 import type { SaleOrderListFilters } from '../composables/useSaleOrders'
 import { useAppResumeRefresh } from '../composables/useAppResumeRefresh'
+import { useBackButtonPopup } from '../composables/useBackButtonPopup'
 
 const router = useRouter()
 const { list, loading, onInvalidate } = useSaleOrders()
@@ -100,6 +101,9 @@ useAppResumeRefresh(
   loadList,
   () => showToast({ type: 'fail', message: '前台恢复后刷新失败，请下拉重试' })
 )
+useBackButtonPopup(filterVisible, () => {
+  filterVisible.value = false
+})
 
 function goToDetail(id: string) {
   router.push(`/sale-orders/${id}`)

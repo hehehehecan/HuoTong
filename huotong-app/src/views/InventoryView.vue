@@ -6,6 +6,7 @@ import { useProducts } from '../composables/useProducts'
 import { adjustStock, getStockLogs, type StockLogWithOrderNo } from '../composables/useInventory'
 import type { Product } from '../composables/useProducts'
 import { useAppResumeRefresh } from '../composables/useAppResumeRefresh'
+import { useBackButtonPopup } from '../composables/useBackButtonPopup'
 
 const router = useRouter()
 const { products, loading, fetchAll, search } = useProducts()
@@ -87,6 +88,9 @@ function closeLogsPopup() {
   logsProduct.value = null
   logsList.value = []
 }
+
+useBackButtonPopup(adjustPopupVisible, closeAdjustPopup)
+useBackButtonPopup(logsPopupVisible, closeLogsPopup)
 
 watch(logsPopupVisible, (visible) => {
   if (visible && logsProduct.value) void loadLogs()
