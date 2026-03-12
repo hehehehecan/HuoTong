@@ -29,9 +29,9 @@
 
 1. `8-1-capacitor-android-init`
 2. `8-2-android-app-identity-build-config`
-3. `10-2-android-first-release-degrade-entry-shaping`
-4. `9-1-session-resume-lifecycle-adaptation`
-5. `9-2-android-back-button-navigation`
+3. `9-1-session-resume-lifecycle-adaptation`
+4. `9-2-android-back-button-navigation`
+5. `10-2-android-first-release-degrade-entry-shaping`
 6. `10-1-network-error-feedback-retry`
 7. `11-1-version-display-overwrite-upgrade-verification`
 8. `11-2-apk-distribution-update-entry`
@@ -41,9 +41,9 @@
 ## Sequencing Rationale
 
 - 先完成 `8-1`、`8-2`，建立可安装、可维护的 Android 壳与应用身份
-- 再做 `10-2`，先把首版范围收敛到稳定闭环，避免过早恢复高风险能力
-- 随后推进 `9-1`、`9-2`，补齐 Android 运行时体验
-- `10-1` 放在运行时适配之后，统一补强网络异常提示与重试链路
+- 随后推进 `9-1`、`9-2`，优先补齐 Android 会话恢复、前后台切换和返回键这些运行时基础能力
+- 再做 `10-2`，在基础运行时成立之后，把首版范围收敛到稳定闭环，避免过早暴露高风险能力
+- `10-1` 放在运行时适配与首版收口之后，统一补强网络异常提示与重试链路
 - 最后处理升级分发与家庭内测交付，确保首版真正可发、可装、可反馈
 
 ## Handoff Note
