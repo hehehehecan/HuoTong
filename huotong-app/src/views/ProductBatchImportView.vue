@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { Button as VanButton, showToast } from 'vant'
 import { useProducts } from '../composables/useProducts'
 import type { ProductInput } from '../composables/useProducts'
+import { platformConfig } from '../lib/platform'
 
 const router = useRouter()
 const { createBatch } = useProducts()
@@ -94,6 +95,11 @@ function clearErrorRow(index: number) {
 }
 
 onMounted(() => {
+  if (!platformConfig.desktopBatchImportEnabled) {
+    showToast(platformConfig.featureTips.batchImport)
+    router.replace('/products')
+    return
+  }
   mediaQueryList = window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`)
   isDesktop.value = mediaQueryList.matches
   if (!mediaQueryList.matches) {

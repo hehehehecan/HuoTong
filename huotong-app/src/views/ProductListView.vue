@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { Button as VanButton, showToast } from 'vant'
 import { useProducts } from '../composables/useProducts'
 import { useAppResumeRefresh } from '../composables/useAppResumeRefresh'
+import { platformConfig } from '../lib/platform'
 
 const router = useRouter()
 const { products, loading, fetchAll, search } = useProducts()
@@ -55,6 +56,10 @@ function goToEdit(id: string) {
 }
 
 function goToBatchImport() {
+  if (!platformConfig.desktopBatchImportEnabled) {
+    showToast(platformConfig.featureTips.batchImport)
+    return
+  }
   router.push('/products/batch')
 }
 
@@ -125,7 +130,7 @@ onUnmounted(() => {
     </van-pull-refresh>
     <div class="fab-wrap">
       <van-button
-        v-if="isDesktop"
+        v-if="isDesktop && platformConfig.desktopBatchImportEnabled"
         type="primary"
         plain
         round

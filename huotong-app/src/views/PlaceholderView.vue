@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showLoadingToast, showSuccessToast, showFailToast, closeToast } from 'vant'
 import { exportDataAsJson } from '../composables/useExportData'
+import { platformConfig } from '../lib/platform'
 
 const route = useRoute()
 const router = useRouter()
@@ -16,6 +17,10 @@ function goToStock() {
 }
 
 async function handleExportData() {
+  if (!platformConfig.webExportDownloadEnabled) {
+    showFailToast(platformConfig.featureTips.exportDownload)
+    return
+  }
   if (exporting.value) return
   exporting.value = true
   showLoadingToast({ message: '正在导出…', duration: 0 })
@@ -38,7 +43,18 @@ async function handleExportData() {
     <p class="placeholder-message">{{ message }}</p>
     <div v-if="isMorePage" class="shortcuts">
       <van-cell title="库存总览" is-link @click="goToStock" />
-      <van-cell title="导出数据" is-link :disabled="exporting" @click="handleExportData" />
+      <van-cell
+        v-if="platformConfig.webExportDownloadEnabled"
+        title="导出数据"
+        is-link
+        :disabled="exporting"
+        @click="handleExportData"
+      />
+      <van-cell
+        v-else
+        title="导出数据（暂不开放）"
+        :label="platformConfig.featureTips.exportDownload"
+      />
     </div>
   </div>
 </template>

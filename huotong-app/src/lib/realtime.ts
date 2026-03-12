@@ -21,6 +21,7 @@ const tableCallbacks = new Map<RealtimeTable, Set<() => void>>()
 let channel: RealtimeChannel | null = null
 let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
 const RECONNECT_DELAY_MS = 2000
+const NOOP_UNSUBSCRIBE = () => {}
 
 function notifyTable(table: RealtimeTable): void {
   tableCallbacks.get(table)?.forEach((cb) => {
@@ -91,7 +92,8 @@ export function subscribeTable(
   onInvalidate: () => void
 ): () => void {
   if (!platformConfig.realtimeEnabled) {
-    return () => {}
+    // Android 首版默认关闭 Realtime 时统一 no-op，调用方无需感知分支。
+    return NOOP_UNSUBSCRIBE
   }
 
   if (!tableCallbacks.has(table)) {

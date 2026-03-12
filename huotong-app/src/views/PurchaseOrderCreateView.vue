@@ -23,6 +23,7 @@ const { fetchAll: fetchSuppliers, search: searchSuppliers } = useSuppliers()
 const { search: searchProducts, fetchAll: fetchProducts } = useProducts()
 const { createDraft, loading: saving, recognizeFromImage } = usePurchaseOrders()
 const router = useRouter()
+const showReceiptRecognition = computed(() => platformConfig.receiptRecognitionEnabled)
 
 const recognizing = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -286,8 +287,8 @@ function compressImageToBase64(file: File): Promise<string> {
 }
 
 function triggerPhotoRecognize() {
-  if (!platformConfig.receiptRecognitionEnabled) {
-    showToast('拍照识别功能尚未启用')
+  if (!showReceiptRecognition.value) {
+    showToast(platformConfig.featureTips.receiptRecognition)
     return
   }
   fileInputRef.value?.click()
@@ -433,6 +434,7 @@ onMounted(() => {
       <div class="total">合计：¥{{ formatPrice(totalAmount) }}</div>
       <div class="buttons">
         <input
+          v-if="showReceiptRecognition"
           ref="fileInputRef"
           type="file"
           accept="image/*"
@@ -441,16 +443,18 @@ onMounted(() => {
           @change="onPhotoFileChange"
         />
         <van-button
+          v-if="showReceiptRecognition"
           type="primary"
           plain
           round
           class="add-btn"
           :loading="recognizing"
-          :disabled="recognizing || !platformConfig.receiptRecognitionEnabled"
+          :disabled="recognizing"
           @click="triggerPhotoRecognize"
         >
-          {{ platformConfig.receiptRecognitionEnabled ? '拍照识别' : '拍照识别未启用' }}
+          拍照识别
         </van-button>
+        <div v-else class="degrade-tip">{{ platformConfig.featureTips.receiptRecognition }}</div>
         <van-button
           type="primary"
           plain
@@ -619,6 +623,14 @@ onMounted(() => {
 .save-btn {
   min-width: 0;
   min-height: 44px;
+}
+.degrade-tip {
+  grid-column: 1 / -1;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--van-orange-dark, #ad5d00);
+  background: var(--van-orange-light, #fff7e8);
 }
 .save-btn {
   grid-column: 1 / -1;
