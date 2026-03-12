@@ -1,6 +1,7 @@
 import { ref, onScopeDispose } from 'vue'
 import { supabase } from '../lib/supabase'
 import { subscribeTable } from '../lib/realtime'
+import { platformConfig } from '../lib/platform'
 import type { PostgrestError } from '@supabase/supabase-js'
 
 export interface PurchaseOrder {
@@ -259,6 +260,10 @@ export function usePurchaseOrders() {
 
   /** 拍照识别：调用 recognize-receipt Edge Function，返回 supplier_name、items、total */
   async function recognizeFromImage(imageBase64: string): Promise<RecognizeReceiptResult | null> {
+    if (!platformConfig.receiptRecognitionEnabled) {
+      return null
+    }
+
     try {
       const { data, error } = await withRetry(() =>
         supabase.functions.invoke('recognize-receipt', {

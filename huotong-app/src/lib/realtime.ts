@@ -4,6 +4,7 @@
  * 支持按表注册 onInvalidate 回调，断线自动重连后触发一次全表刷新。
  */
 import { supabase } from './supabase'
+import { platformConfig } from './platform'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 const REALTIME_TABLES = [
@@ -89,6 +90,10 @@ export function subscribeTable(
   table: RealtimeTable,
   onInvalidate: () => void
 ): () => void {
+  if (!platformConfig.realtimeEnabled) {
+    return () => {}
+  }
+
   if (!tableCallbacks.has(table)) {
     tableCallbacks.set(table, new Set())
   }

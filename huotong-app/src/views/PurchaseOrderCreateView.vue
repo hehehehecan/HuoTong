@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
+import { platformConfig } from '../lib/platform'
 import { useSuppliers } from '../composables/useSuppliers'
 import { useProducts } from '../composables/useProducts'
 import { usePurchaseOrders } from '../composables/usePurchaseOrders'
@@ -274,6 +275,10 @@ function compressImageToBase64(file: File): Promise<string> {
 }
 
 function triggerPhotoRecognize() {
+  if (!platformConfig.receiptRecognitionEnabled) {
+    showToast('拍照识别功能尚未启用')
+    return
+  }
   fileInputRef.value?.click()
 }
 
@@ -430,10 +435,10 @@ onMounted(() => {
           round
           class="add-btn"
           :loading="recognizing"
-          :disabled="recognizing"
+          :disabled="recognizing || !platformConfig.receiptRecognitionEnabled"
           @click="triggerPhotoRecognize"
         >
-          拍照识别
+          {{ platformConfig.receiptRecognitionEnabled ? '拍照识别' : '拍照识别未启用' }}
         </van-button>
         <van-button
           type="primary"

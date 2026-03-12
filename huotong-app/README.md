@@ -24,11 +24,44 @@ npm run dev
 npm run build
 ```
 
-## 部署到 Vercel
+## 推荐部署到 CloudBase
 
-1. 将代码推送到 Git 仓库（GitHub/GitLab/Bitbucket）。
-2. 在 [Vercel](https://vercel.com) 导入该仓库，**Root Directory** 设置为 `huotong-app`（若仓库根即本目录则留空）。
-3. 在项目 **Settings → Environment Variables** 中配置：
+当前项目推荐迁移到 `腾讯云 CloudBase 静态托管`，优先解决 `*.vercel.app` 在中国大陆移动网络下不可达或不稳定的问题。
+
+1. 在 `huotong-app/` 下执行构建：`npm run build`
+2. 上传 `dist/` 到 CloudBase 静态托管
+3. 在托管平台中确认：
+   - 默认首页：`index.html`
+   - SPA 回退：`404.html` 或直接回退到 `index.html`
+4. 在 CloudBase 中配置环境变量：
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-4. 部署完成后，家人可通过 Vercel 提供的 HTTPS 域名在手机/电脑浏览器访问应用；推送新代码后 Vercel 会自动重新构建并上线。
+   - `VITE_REALTIME_ENABLED=false`
+   - `VITE_RECEIPT_RECOGNITION_ENABLED=false`
+5. 先用平台默认域名完成桌面端与手机流量验证，稳定后再考虑自定义域名。
+
+## 兼容旧的 Vercel 部署
+
+如果仍需临时保留 Vercel，可继续在 [Vercel](https://vercel.com) 中使用：
+
+1. 导入该仓库，**Root Directory** 设置为 `huotong-app`
+2. 在项目 **Settings → Environment Variables** 中配置：
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_REALTIME_ENABLED=false`
+   - `VITE_RECEIPT_RECOGNITION_ENABLED=false`
+3. 推送代码后触发自动重新构建
+
+## 国内网络访问建议
+
+如果目标用户主要在中国大陆，尤其需要兼容手机流量访问，`*.vercel.app` 可能会出现不可达或不稳定的问题。建议参考：
+
+- `docs/domestic-deployment.md`
+
+该文档包含：
+
+- 当前项目对 Supabase 能力的使用面审计
+- 开发阶段的 schema-only 迁移方式
+- 国内友好静态托管建议
+- `Realtime` / `拍照识别` 的兼容开关说明
+- 手机流量回归验证请参考 `docs/mobile-network-verification.md`
