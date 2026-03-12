@@ -16,6 +16,7 @@ import {
   getApkUpdateMessage,
   openApkDownloadEntry,
 } from '../lib/apkDistribution'
+import { getFamilyOnboardingMessage } from '../lib/accountOnboarding'
 
 const route = useRoute()
 const router = useRouter()
@@ -70,6 +71,16 @@ async function handleShowUpdateNotes() {
   })
 }
 
+async function handleShowFamilyOnboarding() {
+  await showConfirmDialog({
+    title: '首次安装与登录指引',
+    message: getFamilyOnboardingMessage(),
+    confirmButtonText: '我知道了',
+    showCancelButton: false,
+    closeOnClickOverlay: true,
+  })
+}
+
 onMounted(async () => {
   if (!isMorePage.value) return
   const info = await getAppVersionInfo()
@@ -96,6 +107,12 @@ onMounted(async () => {
         is-link
         label="查看本次更新内容与安装步骤"
         @click="handleShowUpdateNotes"
+      />
+      <van-cell
+        title="首次安装与登录指引"
+        is-link
+        label="安装步骤、登录方式、忘记密码与常见问题"
+        @click="handleShowFamilyOnboarding"
       />
       <van-cell
         v-if="platformConfig.webExportDownloadEnabled"

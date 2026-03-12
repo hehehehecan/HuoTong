@@ -12,6 +12,7 @@ const {
   getAppVersionInfoMock,
   openApkDownloadEntryMock,
   getApkUpdateMessageMock,
+  getFamilyOnboardingMessageMock,
   apkDistributionConfig,
   platformConfig,
 } = vi.hoisted(() => ({
@@ -31,6 +32,7 @@ const {
   getAppVersionInfoMock: vi.fn(),
   openApkDownloadEntryMock: vi.fn(),
   getApkUpdateMessageMock: vi.fn(() => '测试更新说明'),
+  getFamilyOnboardingMessageMock: vi.fn(() => '测试首次安装与登录指引'),
   apkDistributionConfig: {
     latestVersion: '1.0.2',
     downloadUrl: 'https://example.com/huotong.apk',
@@ -76,6 +78,10 @@ vi.mock('../../src/lib/apkDistribution', () => ({
   getApkUpdateMessage: getApkUpdateMessageMock,
 }))
 
+vi.mock('../../src/lib/accountOnboarding', () => ({
+  getFamilyOnboardingMessage: getFamilyOnboardingMessageMock,
+}))
+
 import PlaceholderView from '../../src/views/PlaceholderView.vue'
 
 const vanCellStub = {
@@ -118,6 +124,7 @@ describe('PlaceholderView 版本展示', () => {
     expect(wrapper.text()).toContain('下载更新包')
     expect(wrapper.text()).toContain('推荐 1.0.2')
     expect(wrapper.text()).toContain('更新说明')
+    expect(wrapper.text()).toContain('首次安装与登录指引')
   })
 
   it('版本读取失败时展示未知版本兜底文案', async () => {
@@ -194,6 +201,29 @@ describe('PlaceholderView 版本展示', () => {
       expect.objectContaining({
         title: '更新说明与安装步骤',
         message: '测试更新说明',
+        showCancelButton: false,
+      })
+    )
+  })
+
+  it('点击首次安装与登录指引会弹出家庭使用说明', async () => {
+    const wrapper = mount(PlaceholderView, {
+      global: {
+        stubs: {
+          'van-cell': vanCellStub,
+        },
+      },
+    })
+
+    await flushPromises()
+    const cells = wrapper.findAll('.van-cell-stub')
+    await cells[4]?.trigger('click')
+
+    expect(getFamilyOnboardingMessageMock).toHaveBeenCalled()
+    expect(showConfirmDialogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '首次安装与登录指引',
+        message: '测试首次安装与登录指引',
         showCancelButton: false,
       })
     )
