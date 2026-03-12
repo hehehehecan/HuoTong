@@ -121,3 +121,13 @@ npm run android:build:release
 - 是否误用了不同签名证书；
 - 是否改动了 `applicationId`；
 - 是否忘记递增 `versionCode`。
+
+## 10. 固定分发入口与更新说明（Story 11.2）
+
+- App 内固定更新入口：`更多` 页的 `下载更新包` 与 `更新说明`。
+- 下载入口和推荐版本由前端环境变量维护：
+  - `VITE_ANDROID_APK_LATEST_VERSION`
+  - `VITE_ANDROID_APK_DOWNLOAD_URL`
+- 每次发版后需同步更新上述配置，并确保“更新说明”文案与本次版本一致。
+
+详细流程见：`docs/android-apk-distribution.md`。

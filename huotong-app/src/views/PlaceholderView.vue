@@ -1,10 +1,21 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showLoadingToast, showSuccessToast, showFailToast, closeToast } from 'vant'
+import {
+  showLoadingToast,
+  showSuccessToast,
+  showFailToast,
+  closeToast,
+  showConfirmDialog,
+} from 'vant'
 import { exportDataAsJson } from '../composables/useExportData'
 import { platformConfig } from '../lib/platform'
 import { getAppVersionInfo } from '../lib/appInfo'
+import {
+  apkDistributionConfig,
+  getApkUpdateMessage,
+  openApkDownloadEntry,
+} from '../lib/apkDistribution'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,6 +24,10 @@ const message = computed(() => (route.meta.message as string) ?? '功能开发�
 const isMorePage = computed(() => route.path === '/more')
 const exporting = ref(false)
 const appVersionLabel = ref('读取中...')
+const apkVersionLabel = computed(() => `推荐 ${apkDistributionConfig.latestVersion}`)
+const downloadUrlLabel = computed(() =>
+  apkDistributionConfig.downloadUrl ? apkDistributionConfig.downloadUrl : '未配置下载链接'
+)
 
 function goToStock() {
   router.push('/stock')
@@ -38,6 +53,23 @@ async function handleExportData() {
   }
 }
 
+function handleDownloadApk() {
+  const opened = openApkDownloadEntry()
+  if (!opened) {
+    showFailToast('下载入口暂未配置，请联系维护者')
+  }
+}
+
+async function handleShowUpdateNotes() {
+  await showConfirmDialog({
+    title: '更新说明与安装步骤',
+    message: getApkUpdateMessage(),
+    confirmButtonText: '我知道了',
+    showCancelButton: false,
+    closeOnClickOverlay: true,
+  })
+}
+
 onMounted(async () => {
   if (!isMorePage.value) return
   const info = await getAppVersionInfo()
@@ -52,6 +84,19 @@ onMounted(async () => {
     <div v-if="isMorePage" class="shortcuts">
       <van-cell title="库存总览" is-link @click="goToStock" />
       <van-cell title="当前版本" :value="appVersionLabel" />
+      <van-cell
+        title="下载更新包"
+        is-link
+        :value="apkVersionLabel"
+        :label="downloadUrlLabel"
+        @click="handleDownloadApk"
+      />
+      <van-cell
+        title="更新说明"
+        is-link
+        label="查看本次更新内容与安装步骤"
+        @click="handleShowUpdateNotes"
+      />
       <van-cell
         v-if="platformConfig.webExportDownloadEnabled"
         title="导出数据"
