@@ -261,3 +261,17 @@
 1. **应用内导出**：登录后进入「更多」页（底部 Tab「更多」），点击「导出数据」，应出现「正在导出…」Toast，随后触发浏览器下载 JSON 文件（文件名形如 `huotong-export-YYYYMMDDHHmmss.json`）；打开文件应包含 `exportedAt`、`products`、`customers`、`suppliers`、`sale_orders`、`sale_order_items`、`purchase_orders`、`purchase_order_items`、`receivables`、`payables`、`stock_logs` 等 key，且为当前用户可见的业务数据。
 2. **开发者备份**（可选）：在项目根配置 `DATABASE_URL` 或先执行 `supabase link`，运行 `./scripts/backup-db.sh`，应在 `_backups/` 下生成 `dump_YYYYMMDD_HHmm.sql`；打开 `docs/backup-restore.md` 可按文档执行恢复（建议仅在测试环境验证）。
 
+---
+
+## 8-1-capacitor-android-init（循环完成日：2026-03-12）
+
+**已验证**：否
+
+1. 在 `huotong-app` 执行 `java -version`，确认当前 JDK 为 17 或更高版本；若仍是 Java 11/8，应先切换 `JAVA_HOME` 再继续后续步骤。
+2. 执行 `npm run android:sync`，应成功完成 build + cap sync，且 `android/app/src/main/assets/public` 下可见最新前端资源文件。
+3. 执行 `npm run android:build`，应成功完成 `assembleDebug`，证明当前环境可以产出 Android 调试包。
+4. 执行 `npm run android:open`，Android Studio 能正常打开 `android/` 工程并完成 Gradle 同步。
+5. 连接一台 Android 真机（或启动模拟器）后执行 `npm run android:run`，应用应可安装并从桌面图标启动，进入 HuoTong 登录页或首页。
+6. 启动后确认页面加载来源为本地打包资源（无浏览器地址栏、无跳转公网 H5 入口）；基本路由可正常进入（如登录页与首页）。
+7. 若第 5 步失败，记录机型、Android 版本、是否有可用设备/模拟器、错误日志摘要，便于 Story 8.2 继续处理应用身份与构建配置。
+

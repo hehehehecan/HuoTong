@@ -93,20 +93,20 @@ development_status:
   # Android round 2 planning (2026-03-12)
   # Order is intentionally aligned with the recommended BMAD story execution queue.
 
-  epic-8: backlog
-  8-1-capacitor-android-init: backlog
+  epic-8: in-progress
+  8-1-capacitor-android-init: in-progress
   8-2-android-app-identity-build-config: backlog
   epic-8-retrospective: optional
-
-  epic-10: backlog
-  10-2-android-first-release-degrade-entry-shaping: backlog
-  10-1-network-error-feedback-retry: backlog
-  epic-10-retrospective: optional
 
   epic-9: backlog
   9-1-session-resume-lifecycle-adaptation: backlog
   9-2-android-back-button-navigation: backlog
   epic-9-retrospective: optional
+
+  epic-10: backlog
+  10-2-android-first-release-degrade-entry-shaping: backlog
+  10-1-network-error-feedback-retry: backlog
+  epic-10-retrospective: optional
 
   epic-11: backlog
   11-1-version-display-overwrite-upgrade-verification: backlog

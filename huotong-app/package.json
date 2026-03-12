@@ -8,9 +8,17 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "android:add": "npx cap add android",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:build": "node ./scripts/ensure-android-java.mjs && npm run android:sync && ./android/gradlew -p android assembleDebug",
+    "android:run": "node ./scripts/ensure-android-java.mjs && npm run android:sync && npx cap run android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
     "@supabase/supabase-js": "^2.98.0",
     "pinia": "^3.0.4",
     "vant": "^4.9.22",
